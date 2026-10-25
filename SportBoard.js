@@ -74,75 +74,101 @@ function addText(stack, str, size, color, weight) {
   return t;
 }
 
-function eventRow(parent, it, today, opts) {
+function compLabel(e) {
+  if (e.sport === "f1") return "Formel 1 · " + (e.away || "Rennen");
+  return e.comp;
+}
+
+function eventRow(parent, it, fs) {
   const row = parent.addStack(); row.centerAlignContent();
   row.spacing = 6;
-  const color = it.e.bayern ? C.bayern : C.text;
-  const t = row.addStack(); t.size = new Size(opts.timeW, 0);
-  addText(t, timeLabel(it), opts.fs - 1, it.e.bayern ? C.bayern : C.dim, "m");
-  addText(row, (ICON[it.e.sport] || "•") + " " + (it.e.short || it.e.home), opts.fs, color, "b");
+  const t = row.addStack(); t.size = new Size(Math.round(fs * 3.5), 0);
+  addText(t, timeLabel(it), fs - 1, it.e.bayern ? C.bayern : C.dim, "m");
+  addText(row, (ICON[it.e.sport] || "•") + " " + (it.e.short || it.e.home), fs, it.e.bayern ? C.bayern : C.text, "b");
   row.addSpacer();
-  if (opts.showComp) addText(row, it.e.comp, opts.fs - 3, C.faint, "r");
+  addText(row, compLabel(it.e), Math.max(fs - 4, 9), C.faint, "r");
   return row;
+}
+
+// ---------- Platz berechnen: Schrift so groß wie möglich ----------
+function availHeight(fam) {
+  let k = 1;
+  try { k = Math.min(1.25, Math.max(0.9, Device.screenSize().width / 393)); } catch (e) {}
+  const h = fam === "large" ? 354 : 158;           // Widget-Höhe in pt (iPhone ohne Max)
+  return Math.round(h * k) - 22 - 18;              // minus Rand und Kopfzeile
+}
+const rowH = fs => fs * 1.25 + 3;
+
+function layout(lines, avail, maxFs, minFs) {
+  // lines: {k:"ev"|"hdr"|"run"|"more", ...}; Höhe je Typ
+  const total = fs => lines.reduce((a, l) => a + (l.k === "ev" ? rowH(fs) : rowH(fs - 4)), 0);
+  let moreCount = 0;
+  while (total(minFs) > avail && lines.filter(l => l.k === "ev").length > 1) {
+    const last = lines.pop();
+    if (last.k === "ev") moreCount++;
+    while (lines.length && lines[lines.length - 1].k === "hdr") lines.pop();   // keine Überschrift ohne Zeilen
+  }
+  if (moreCount) lines.push({ k: "more", text: "+ " + moreCount + " weitere" });
+  let fs = maxFs;
+  while (fs > minFs && total(fs) > avail) fs--;
+  const gap = Math.max(2, Math.min(10, (avail - total(fs)) / Math.max(1, lines.length)));
+  return { fs, gap, lines };
 }
 
 // ---------- Widgets ----------
 function emptyHint(parent, text, size) { addText(parent, text, size, C.dim, "r"); }
 
-function buildSmall(w, L, now) {
-  const today = dayStart(now);
-  const next = L.items.slice(0, 2);
-  addText(w, "SPORT BOARD", 9, C.faint, "b");
-  w.addSpacer(6);
-  if (!next.length) { emptyHint(w, "Nichts angesetzt", 12); return; }
-  next.forEach((it, i) => {
-    if (i) w.addSpacer(8);
-    addText(w, dayLabel(it.day, today) + (it.hasTime ? " · " + timeLabel(it) : ""), 10, it.e.bayern ? C.bayern : C.dim, "m");
-    addText(w, (ICON[it.e.sport] || "") + " " + it.e.short, 15, C.text, "b");
-    addText(w, it.e.comp, 9, C.faint, "r");
-  });
-}
-
-function buildList_(w, L, now, maxRows, fs, multiDay) {
-  const today = dayStart(now), T = today.getTime();
-  const todays = L.items.filter(i => i.day.getTime() === T);
+function header(w, todays) {
   const head = w.addStack(); head.centerAlignContent();
   addText(head, "SPORT BOARD", 9, C.faint, "b"); head.addSpacer();
-  addText(head, todays.length ? "HEUTE · " + todays.length : "HEUTE FREI", 9, todays.length ? C.text : C.faint, "b");
+  addText(head, todays ? "HEUTE · " + todays : "HEUTE FREI", 9, todays ? C.text : C.faint, "b");
   w.addSpacer(6);
+}
 
-  // laufende Turniere (Golf/Tennis) als eine Zeile
-  if (L.running.length) {
-    const r = L.running.map(s => (ICON[s.sport] || "") + " " + s.name).slice(0, 2).join("  ·  ");
-    addText(w, "Läuft: " + r, fs - 2, C.dim, "r"); w.addSpacer(4); maxRows--;
-  }
+function buildSmall(w, L, now) {
+  const today = dayStart(now);
+  addText(w, "SPORT BOARD", 9, C.faint, "b");
+  w.addSpacer(8);
+  const next = L.items.slice(0, 2);
+  if (!next.length) { emptyHint(w, "Nichts angesetzt", 13); w.addSpacer(); return; }
+  next.forEach((it, i) => {
+    if (i) w.addSpacer(12);
+    addText(w, dayLabel(it.day, today).toUpperCase() + (it.hasTime ? " · " + timeLabel(it) : ""), 11, it.e.bayern ? C.bayern : C.dim, "b");
+    addText(w, (ICON[it.e.sport] || "") + " " + it.e.short, 18, it.e.bayern ? C.bayern : C.text, "b");
+    addText(w, compLabel(it.e), 10, C.faint, "r");
+  });
+  w.addSpacer();
+}
 
-  // Gruppen nach Tag bilden
+function buildList_(w, L, now, fam) {
+  const today = dayStart(now), T = today.getTime();
+  const multi = fam === "large";
+  const todays = L.items.filter(i => i.day.getTime() === T).length;
+  header(w, todays);
+
   const groups = [];
   for (const it of L.items) {
     const g = groups[groups.length - 1];
     if (g && g.day === it.day.getTime()) g.items.push(it); else groups.push({ day: it.day.getTime(), date: it.day, items: [it] });
   }
-  // Mittel: nur der erste Tag (heute, sonst nächster Tag mit Hinweis). Groß: mehrere Tage.
-  const shown = multiDay ? groups.slice(0, 4) : groups.slice(0, 1);
-  if (!shown.length) { emptyHint(w, "Nichts angesetzt", fs); w.addSpacer(); return; }
-  if (!todays.length) { addText(w, "Heute nichts angesetzt", fs - 1, C.dim, "r"); w.addSpacer(5); }
-
-  let rows = 0, left = 0;
+  const shown = multi ? groups.slice(0, 4) : groups.slice(0, 1);
+  const lines = [];
+  if (L.running.length) lines.push({ k: "run", text: "Läuft: " + L.running.map(s => (ICON[s.sport] || "") + " " + s.name).slice(0, 2).join("  ·  ") });
+  if (!todays) lines.push({ k: "hdr", text: "Heute nichts angesetzt", dim: true });
   for (const g of shown) {
-    if (rows >= maxRows - 1) { left += g.items.length; continue; }
-    if (multiDay || g.day !== T) {
-      addText(w, dayLabel(g.date, today).toUpperCase() + (g.day === T ? "" : "  ·  " + g.items.length + (g.items.length === 1 ? " Spiel" : " Spiele")), fs - 3, g.day === T ? C.text : C.dim, "b");
-      w.addSpacer(2); rows++;
-    }
-    for (let i = 0; i < g.items.length; i++) {
-      if (rows >= maxRows) { left += g.items.length - i; break; }
-      eventRow(w, g.items[i], today, { fs, timeW: fs * 3.4, showComp: true });
-      w.addSpacer(3); rows++;
-    }
-    w.addSpacer(4);
+    if (multi || g.day !== T) lines.push({ k: "hdr", text: dayLabel(g.date, today).toUpperCase() + (g.day === T ? "" : "  ·  " + g.items.length + (g.items.length === 1 ? " Spiel" : " Spiele")), dim: g.day !== T });
+    g.items.forEach(it => lines.push({ k: "ev", it }));
   }
-  if (left > 0) addText(w, "+ " + left + " weitere", fs - 3, C.faint, "m");
+  if (!shown.length) lines.push({ k: "hdr", text: "Nichts angesetzt", dim: true });
+
+  const { fs, gap, lines: L2 } = layout(lines, availHeight(fam), multi ? 15 : 19, 10);
+  for (const l of L2) {
+    if (l.k === "ev") eventRow(w, l.it, fs);
+    else if (l.k === "run") addText(w, l.text, fs - 3, C.dim, "r");
+    else if (l.k === "more") addText(w, l.text, fs - 4, C.faint, "m");
+    else addText(w, l.text, fs - 4, l.dim ? C.dim : C.text, "b");
+    w.addSpacer(gap);
+  }
   w.addSpacer();
 }
 
@@ -160,7 +186,15 @@ function buildLock(w, L, now, inline) {
 }
 
 async function main() {
-  const fam = config.widgetFamily || "medium";
+  let fam = config.widgetFamily;
+  if (!fam) {   // in der App gestartet: Größe zur Vorschau wählen
+    const a = new Alert(); a.title = "Vorschau";
+    ["Klein", "Mittel", "Groß"].forEach(x => a.addAction(x));
+    a.addCancelAction("Abbrechen");
+    const i = await a.presentSheet();
+    fam = ["small", "medium", "large"][i];
+    if (!fam) { Script.complete(); return; }
+  }
   const w = new ListWidget();
   w.url = URL_APP;
   const now = new Date();
@@ -172,14 +206,13 @@ async function main() {
       w.backgroundColor = C.bg;
       w.setPadding(12, 14, 10, 14);
     }
-    if (fam === "small") buildSmall(w, L, now); 
-    else if (fam === "medium") buildList_(w, L, now, 5, 12, false);
-    else if (fam === "large") buildList_(w, L, now, 14, 12, true);
-    else if (fam === "extraLarge") buildList_(w, L, now, 14, 13, true);
+    if (fam === "small") buildSmall(w, L, now);
+    else if (fam === "medium") buildList_(w, L, now, "medium");
+    else if (fam === "large" || fam === "extraLarge") buildList_(w, L, now, "large");
     else if (fam === "accessoryInline") buildLock(w, L, now, true);
     else if (fam === "accessoryRectangular" || fam === "accessoryCircular") buildLock(w, L, now, false);
-    else buildList_(w, L, now, 5, 12, false);
-    if (offline && !lock) { w.addSpacer(); addText(w, "offline · Stand gespeichert", 8, C.faint, "r"); }
+    else buildList_(w, L, now, "medium");
+    if (offline && !lock) addText(w, "offline · Stand gespeichert", 8, C.faint, "r");
   } catch (e) {
     w.backgroundColor = C.bg;
     addText(w, "Sport Board", 12, C.text, "b");
@@ -187,6 +220,8 @@ async function main() {
   }
   w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
   if (config.runsInWidget) Script.setWidget(w);
+  else if (fam === "small") await w.presentSmall();
+  else if (fam === "medium") await w.presentMedium();
   else await w.presentLarge();
   Script.complete();
 }
