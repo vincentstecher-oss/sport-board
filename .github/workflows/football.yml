@@ -1,0 +1,46 @@
+name: Fußball aktualisieren
+
+# Spielpläne, Ergebnisse, Tabellen und Fußball-Termine aus den Feeds, ohne Claude.
+# Zeiten in UTC: morgens, nach den Nachmittagsspielen und nach den Abendspielen.
+on:
+  schedule:
+    - cron: "17 5 * * *"
+    - cron: "47 17 * * *"
+    - cron: "37 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: board-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Daten aktualisieren und pushen
+        env:
+          WARN_FILE: ${{ runner.temp }}/warnings.txt
+        run: |
+          git config user.name "sport-board-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            python3 scripts/football.py
+            if git diff --quiet; then echo "Keine Änderung"; break; fi
+            git commit -qam "Fußball-Update $(TZ=Europe/Berlin date +'%d.%m.%Y %H:%M')"
+            if git push -q origin HEAD:main; then echo "Gepusht"; break; fi
+            echo "Push abgelehnt, neuer Versuch"; sleep 10
+          done
+      - name: Warnungen
+        if: always()
+        run: |
+          f="${{ runner.temp }}/warnings.txt"
+          if [ -s "$f" ]; then echo "::warning::$(tr '\n' ' ' < "$f")"; cat "$f" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
