@@ -731,7 +731,7 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
       if (e.note) info += '<div>' + svg(I.info) + '<span>' + esc(e.note) + '</span></div>';
       html += '<div class="info">' + info + '</div>';
       var lk = e.sport === 'fussball' ? (e.comp === 'DFB-Pokal' ? 'pk' : LEAGUE[e.comp]) : null;
-      html += '<div class="acts">' + (done ? '' : '<button class="btn pri" type="button" data-ics="ev:' + esc(e.id) + '">' + svg(I.plus) + 'In Kalender</button>') +
+      html += '<div class="acts">' + (done || window.SB_ART ? '' : '<button class="btn pri" type="button" data-ics="ev:' + esc(e.id) + '">' + svg(I.plus) + 'In Kalender</button>') +
         (lk && (fixtures[lk] || (data.tables || []).some(function (t) { return t.key === lk; })) ? '<button class="btn" type="button" data-league="' + lk + '">' + svg(I.list) + (lk === 'pk' ? 'Pokalrunde' : 'Tabelle') + '</button>' : '') + '</div>';
     } else {
       var s = series.filter(function (x) { return x.id === id; })[0]; if (!s) return;
@@ -740,7 +740,7 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
         '<div class="solo"><h3>' + esc(s.name) + '</h3><p>' + esc(dayMonth.format(keyDate(s.from)) + ' bis ' + dayMonth.format(keyDate(s.to))) + '</p></div><div class="status" style="text-align:left">' +
         (running ? '<span class="pill live">Läuft gerade</span>' : s.to < c.today ? '<span class="pill dim">Vorbei</span>' : '<span class="pill dim">' + esc(diff(c.today, s.from) === 1 ? 'startet morgen' : 'startet in ' + diff(c.today, s.from) + ' Tagen') + '</span>') + '</div>';
       var inf = (s.place ? '<div>' + svg(I.pin) + '<span>' + esc(s.place) + '</span></div>' : '') + '<div>' + svg(I.trophy) + '<span>' + esc(s.tour) + '</span></div>' + (s.note ? '<div>' + svg(I.info) + '<span>' + esc(s.note) + '</span></div>' : '');
-      html += '<div class="info">' + inf + '</div>' + (s.to < c.today ? '' : '<div class="acts"><button class="btn pri" type="button" data-ics="ser:' + esc(s.id) + '">' + svg(I.plus) + 'In Kalender</button></div>');
+      html += '<div class="info">' + inf + '</div>' + (s.to < c.today || window.SB_ART ? '' : '<div class="acts"><button class="btn pri" type="button" data-ics="ser:' + esc(s.id) + '">' + svg(I.plus) + 'In Kalender</button></div>');
     }
     var host = document.getElementById('sheetHost');
     host.innerHTML = '<div class="sheet-bg" data-close="1"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Details"><div class="grab"></div>' + html + '</div>';
@@ -833,6 +833,7 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 2400); }
   var lastCheck = Date.now(), busy = false;
   function refresh(manual) {
+    if (window.SB_ART) { if (manual) toast('Das Board aktualisiert sich jeden Morgen um 10 Uhr'); return; }
     if (busy || !/^https?:$/.test(location.protocol)) { if (manual) toast('Aktualisieren geht nur in der App'); return; }
     if (navigator.onLine === false) { if (manual) toast('Offline, zeige gespeicherten Stand'); return; }
     busy = true; lastCheck = Date.now();
