@@ -1,12 +1,11 @@
 name: Fußball aktualisieren
 
 # Spielpläne, Ergebnisse, Tabellen und Fußball-Termine aus den Feeds, ohne Claude.
-# Zeiten in UTC: morgens, nach den Nachmittagsspielen und nach den Abendspielen.
+# Zeiten in UTC: morgens zweimal, ab Mittag bis Mitternacht alle 30 Minuten (der Feed trägt Ergebnisse verzögert ein).
 on:
   schedule:
-    - cron: "17 5 * * *"
-    - cron: "47 17 * * *"
-    - cron: "37 22 * * *"
+    - cron: "17 5,9 * * *"
+    - cron: "17,47 12-23 * * *"
   workflow_dispatch:
 
 permissions:

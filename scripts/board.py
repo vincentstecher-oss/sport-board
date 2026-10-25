@@ -5,6 +5,7 @@ Befehle:
   python3 scripts/board.py push              Push-Text für heute ausgeben (oder NICHTS)
   python3 scripts/board.py status            Kurzer Lagebericht: laufende Turniere, Pokal, nächste Termine
   python3 scripts/board.py show SPORT        Termine einer Sportart kompakt auflisten (fussball, tennis, golf, boxen, mma, f1)
+  python3 scripts/board.py today             Heutige Termine und heutige Ligaspiele mit Ergebnis-Stand (für den Ergebnis-Lauf)
   python3 scripts/board.py apply PATCH.json  Änderungen einspielen (siehe PATCH-FORMAT unten)
 
 PATCH-FORMAT (alle Schlüssel optional):
@@ -15,7 +16,9 @@ PATCH-FORMAT (alle Schlüssel optional):
    "notes": ["...", ...],                 # ersetzt die Hinweisliste komplett
    "set_notes": {"Präfix": "neuer Text oder leer zum Löschen"},   # einzelne Hinweise per Anfang ersetzen
    "pk_round": {"n": 2, "m": [["YYMMDDHHMM", "Heim", "Gast", "", 0], ...]},   # DFB-Pokal-Runde mit Teamnamen
-   "pk_results": [["Heim", "Gast", "2-1"], ...]}
+   "pk_results": [["Heim", "Gast", "2-1"], ...],
+   "results": {"event-id": "3-1" | "1. Antonelli, 2. Leclerc, 3. Verstappen" | "Kabayel siegt durch KO in Runde 5"},
+   "fx_results": [["bl|pl|ll|sa|l1|cl", "Heim", "Gast", "2-1"], ...]}   # Ergebnisse in den Spielplänen (Tabellen)
 
 Die Datei wird kompakt und unverändert formatiert zurückgeschrieben; alles außerhalb des Datenblocks bleibt gleich.
 """
@@ -134,6 +137,25 @@ def status(data):
     return '\n'.join(out)
 
 
+def today_list(data):
+    day = today_berlin()
+    out = [f'Heute (Berlin): {day.isoformat()}', 'TERMINE (id | Zeit | Begegnung | Wettbewerb | Ergebnis):']
+    for e in sorted([e for e in data.get('events', []) if ev_day(e) == day], key=sort_key):
+        t = ev_dt(e)
+        out.append(f"{e['id']} | {t.strftime('%H:%M') if t else 'offen'} | {e['home']} – {e['away']} | {e['sport']} {e['comp']} | {e.get('result', '-')}")
+    out.append('LIGASPIELE HEUTE (Liga | Heim | Gast | Ergebnis):')
+    for f in data.get('fixtures', []):
+        if f['key'] == 'pk':
+            continue
+        for r in f['rounds']:
+            for m in r['m']:
+                ts = m[0]
+                d = (datetime.strptime(ts, '%y%m%d%H%M').replace(tzinfo=timezone.utc).astimezone(BERLIN).date() if len(ts) >= 10 else datetime.strptime(ts, '%y%m%d').date())
+                if d == day:
+                    out.append(f"{f['key']} | {f['teams'][m[1]]} | {f['teams'][m[2]]} | {m[3] or '-'}")
+    return '\n'.join(out)
+
+
 def show(data, sport):
     rows = []
     for e in sorted([e for e in data.get('events', []) if e['sport'] == sport], key=sort_key):
@@ -216,6 +238,22 @@ def apply(data, patch):
                     if teams[m[1]] == h and teams[m[2]] == a:
                         m[3] = sc; hit = True
             log.append(f"Pokal-Ergebnis {h} – {a} {sc}" + ('' if hit else ' (Spiel nicht gefunden)'))
+    evm = {e['id']: e for e in data.get('events', [])}
+    for i, txt in patch.get('results', {}).items():
+        if i in evm and txt and evm[i].get('result') != txt:
+            evm[i]['result'] = txt; log.append(f'Ergebnis {i}: {txt}')
+    fxs = {f['key']: f for f in data.get('fixtures', [])}
+    for key, h, a, sc in patch.get('fx_results', []):
+        f = fxs.get(key); hit = False
+        if f:
+            for r in f['rounds']:
+                for m in r['m']:
+                    if f['teams'][m[1]] == h and f['teams'][m[2]] == a:
+                        hit = True
+                        if m[3] != sc:
+                            m[3] = sc; log.append(f'Spielplan {key}: {h} – {a} {sc}')
+        if not hit:
+            log.append(f'Spielplan {key}: {h} – {a} nicht gefunden')
     data['asOf'] = iso(now_utc())
     return log
 
@@ -229,6 +267,8 @@ def main(argv):
         print(push_text(data) or 'NICHTS')
     elif cmd == 'status':
         print(status(data))
+    elif cmd == 'today':
+        print(today_list(data))
     elif cmd == 'show':
         print(show(data, argv[2]))
     elif cmd == 'apply':

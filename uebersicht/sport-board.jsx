@@ -51,9 +51,11 @@ export function model(data, now) {
     const o = { ...e };
     if (e.start) { o.t0 = new Date(e.start); o.t1 = new Date(o.t0.getTime() + (e.dur || 120) * 60000); o.key = fDay.format(o.t0); o.timed = true; }
     else { o.key = e.date; o.timed = false; }
-    o.live = o.timed && o.t0 <= now && now < o.t1;
+    o.live = o.timed && !e.result && o.t0 <= now && now < o.t1;
     o.done = !o.live && (o.timed ? o.t1 <= now : false);
-    o.score = e.sport === "fussball" ? results[o.key + "|" + norm(e.home) + "|" + norm(e.away)] || "" : "";
+    const isScore = e.result && /^\d+\s*[-:]\s*\d+/.test(e.result);
+    o.score = isScore ? e.result.replace(/\s+/g, "").replace("-", ":") : e.sport === "fussball" ? results[o.key + "|" + norm(e.home) + "|" + norm(e.away)] || "" : "";
+    o.res = e.result && !isScore ? e.result : "";
     o.time = o.timed ? (e.tent ? "~" : "") + fTime.format(o.t0) : "offen";
     o.plain = e.comp === "DFB-Pokal" && !e.bayern && e.why !== "Top-4-Team";
     return o;
@@ -138,11 +140,11 @@ function Row({ r, first }) {
     );
   }
   const e = r.ev;
-  const dim = e.done && !e.score;
+  const dim = e.done && !e.score && !e.res;
   return (
     <div style={{ ...st, opacity: dim ? 0.45 : 1 }}>
       <span style={{ ...S.time, color: e.bayern ? C.fcb : "#F2F4F7" }}>{e.time}</span>
-      <div style={{ minWidth: 0 }}><div style={S.name}>{label(e)}</div><div style={{ ...S.sub, color: e.bayern ? C.fcb : C.muted }}>{subOf(e)}</div></div>
+      <div style={{ minWidth: 0 }}><div style={S.name}>{label(e)}</div><div style={{ ...S.sub, color: e.res ? "#F2F4F7" : e.bayern ? C.fcb : C.muted }}>{e.res || subOf(e)}</div></div>
       <span style={{ ...S.right, color: e.live ? C.live : "#F2F4F7" }}>{e.live ? (e.score || "LIVE") : e.score}</span>
     </div>
   );

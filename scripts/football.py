@@ -161,6 +161,11 @@ def main(dry=False):
                 continue  # unvollständige Runde: alten Stand behalten
             ms.sort(key=lambda x: (x[0], x[1]))
             o = old.get(n)
+            if o is not None:
+                ksc = {(x[1], x[2]): x[3] for x in o['m'] if x[3]}
+                for x in ms:
+                    if not x[3] and (x[1], x[2]) in ksc:
+                        x[3] = ksc[(x[1], x[2])]
             if o is None or [x[:4] for x in sorted(o['m'], key=lambda x: (x[0], x[1]))] != [x[:4] for x in ms]:
                 changed += 1
             old[n] = {'n': n, 'm': ms}
