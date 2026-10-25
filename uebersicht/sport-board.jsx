@@ -1,32 +1,35 @@
-// Sport Board – Widget für Übersicht (macOS-Schreibtisch)
+// Sport Board – Widget für Übersicht (macOS-Schreibtisch), mittlere Apple-Widget-Größe, nur heute.
 // Installation: Datei in den Widget-Ordner von Übersicht legen (Menüleiste: Übersicht > Open Widgets Folder).
-// Liest die Daten aus https://vincentstecher-oss.github.io/sport-board/ und zeigt Bayern, heute und die nächsten Tage.
-// Position anpassen: unten bei className die Werte top/right ändern.
+// Position: sitzt links unter den Apple-Widgets Uhr und Kalender (gemessen auf Vincents MacBook: Apple-Widgets
+// 14 pt vom linken Rand, Abstand 16 pt, kleine Widgets enden 595 pt unter der Bildschirmoberkante;
+// Übersicht zählt ab Unterkante der Menüleiste, daher top 572). Zum Verschieben top/left ändern.
 import { run } from "uebersicht";
 
 const URL_APP = "https://vincentstecher-oss.github.io/sport-board/";
 export const command = `curl -sfL --max-time 20 "${URL_APP}?w=$(date +%s)"`;
-export const refreshFrequency = 10 * 60 * 1000;
+export const refreshFrequency = 5 * 60 * 1000;
 
 export const className = `
-  top: 36px;
-  right: 28px;
-  width: 330px;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  color: #EEF1F5;
+  top: 572px;
+  left: 14px;
+  width: 344px;
+  height: 164px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  color: #F2F4F7;
   -webkit-font-smoothing: antialiased;
 `;
 
-// ---------- Daten aufbereiten ----------
+// ---------- Daten ----------
 const TZ = "Europe/Berlin";
 const fDay = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 const fTime = new Intl.DateTimeFormat("de-DE", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const fHead = new Intl.DateTimeFormat("de-DE", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" });
 const fDow = new Intl.DateTimeFormat("de-DE", { timeZone: "UTC", weekday: "short" });
 const SPORT = { fussball: "Fußball", tennis: "Tennis", golf: "Golf", boxen: "Boxen", mma: "MMA", f1: "Formel 1" };
+const MAX_ROWS = 3;
 
-const keyDate = (k) => new Date(k + "T12:00:00Z");
-const diffDays = (a, b) => Math.round((keyDate(b) - keyDate(a)) / 86400000);
 const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+const keyDate = (k) => new Date(k + "T12:00:00Z");
 
 export function parse(output) {
   const m = String(output || "").match(/<script type="application\/json" id="board-data">([\s\S]*?)<\/script>/);
@@ -44,125 +47,136 @@ export function model(data, now) {
       : "20" + ts.slice(0, 2) + "-" + ts.slice(2, 4) + "-" + ts.slice(4, 6);
     results[k + "|" + norm(f.teams[m[1]]) + "|" + norm(f.teams[m[2]])] = m[3].replace("-", ":");
   })));
-  const evs = (data.events || []).map((e) => {
+  const all = (data.events || []).map((e) => {
     const o = { ...e };
     if (e.start) { o.t0 = new Date(e.start); o.t1 = new Date(o.t0.getTime() + (e.dur || 120) * 60000); o.key = fDay.format(o.t0); o.timed = true; }
     else { o.key = e.date; o.timed = false; }
     o.live = o.timed && o.t0 <= now && now < o.t1;
-    o.done = o.timed ? o.t1 <= now : o.key < today;
+    o.done = !o.live && (o.timed ? o.t1 <= now : false);
     o.score = e.sport === "fussball" ? results[o.key + "|" + norm(e.home) + "|" + norm(e.away)] || "" : "";
     o.time = o.timed ? (e.tent ? "~" : "") + fTime.format(o.t0) : "offen";
     o.plain = e.comp === "DFB-Pokal" && !e.bayern && e.why !== "Top-4-Team";
     return o;
-  }).filter((o) => o.key).sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : (a.timed === b.timed ? (a.timed ? a.t0 - b.t0 : 0) : a.timed ? -1 : 1)));
+  }).filter((o) => o.key);
+  const sorter = (a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : (a.timed === b.timed ? (a.timed ? a.t0 - b.t0 : 0) : a.timed ? -1 : 1));
+  const list = all.filter((e) => e.key === today).sort(sorter);
 
-  const fcb = evs.find((e) => e.bayern && !e.done && diffDays(today, e.key) <= 10) || null;
-  if (fcb) {
-    const d = diffDays(today, fcb.key), mins = fcb.timed ? Math.round((fcb.t0 - now) / 60000) : null;
-    fcb.rel = fcb.live ? "läuft" : d === 0 ? (mins !== null && mins < 60 ? `in ${Math.max(1, mins)} Min` : "heute") : d === 1 ? "morgen" : `${fDow.format(keyDate(fcb.key)).replace(".", "")} ${+fcb.key.slice(8)}.${+fcb.key.slice(5, 7)}.`;
-  }
-  const rows = (list) => {
-    const plain = list.filter((e) => e.plain);
-    if (plain.length <= 3) return list.map((e) => ({ ev: e }));
-    const out = []; let added = false;
-    list.forEach((e) => {
-      if (!e.plain) { out.push({ ev: e }); return; }
-      if (!added) { added = true; out.push({ group: { n: plain.length, times: [...new Set(plain.map((p) => p.time))].sort().join(" / "), note: plain[0].note || "" } }); }
-    });
-    return out;
-  };
-  const todayList = evs.filter((e) => e.key === today && (!fcb || e.id !== fcb.id));
-  const days = [];
-  for (let i = 1; i <= 7 && days.length < 3; i++) {
-    const k = fDay.format(new Date(keyDate(today).getTime() + i * 86400000));
-    const list = evs.filter((e) => e.key === k && (!fcb || e.id !== fcb.id));
-    if (list.length) days.push({ label: i === 1 ? "Morgen" : `${fDow.format(keyDate(k)).replace(".", "")} ${+k.slice(8)}.${+k.slice(5, 7)}.`, rows: rows(list) });
-  }
+  // Reihenfolge: Bayern, läuft gerade, kommt noch, vorbei
+  const rank = (e) => (e.bayern && !e.done ? 0 : e.live ? 1 : !e.done ? 2 : 3);
+  const ordered = list.slice().sort((a, b) => rank(a) - rank(b) || sorter(a, b));
+  const plain = ordered.filter((e) => e.plain);
+  const rows = [];
+  let grouped = false;
+  ordered.forEach((e) => {
+    if (e.plain && plain.length > 2) {
+      if (!grouped) { grouped = true; rows.push({ group: { n: plain.length, times: [...new Set(plain.map((p) => p.time))].sort().join(" / "), note: plain[0].note || "" } }); }
+      return;
+    }
+    rows.push({ ev: e });
+  });
   const running = (data.series || []).filter((s) => s.from <= today && today <= s.to);
+  running.forEach((s) => rows.push({ series: s }));
+
+  let next = null;
+  if (!rows.length) {
+    const fut = all.filter((e) => e.key > today).sort(sorter);
+    const day = fut.length ? fut[0].key : null;
+    const sameDay = fut.filter((e) => e.key === day);
+    const n = sameDay.find((e) => e.bayern) || sameDay.find((e) => !e.plain) || sameDay[0];
+    if (n) next = { e: n, when: `${fDow.format(keyDate(n.key)).replace(".", "")} ${+n.key.slice(8)}.${+n.key.slice(5, 7)}.${n.timed ? " " + n.time : ""}` };
+  }
   const asOf = data.asOf ? new Date(data.asOf) : null;
   return {
-    fcb, today: rows(todayList), days, running,
-    stamp: asOf ? "Stand " + (fDay.format(asOf) === today ? fTime.format(asOf) : `${+fDay.format(asOf).slice(8)}.${+fDay.format(asOf).slice(5, 7)}.`) : "",
+    head: fHead.format(now),
+    rows: rows.slice(0, MAX_ROWS),
+    more: Math.max(0, rows.length - MAX_ROWS),
+    count: list.length,
+    next,
     old: asOf ? now - asOf > 26 * 3600000 : true,
   };
 }
 
 // ---------- Darstellung ----------
-const C = { card: "rgba(14,17,23,0.86)", line: "rgba(236,241,248,0.08)", muted: "#8F98A6", faint: "#5D6674", fcb: "#DC2B3A", fcbInk: "#F39AA3", live: "#FF4B5C" };
+const C = { muted: "rgba(235,240,247,0.55)", line: "rgba(255,255,255,0.08)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
-  card: { color: "#EEF1F5", background: C.card, border: `1px solid ${C.line}`, borderRadius: 18, padding: "14px 14px 10px", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 12px 34px rgba(0,0,0,0.35)", cursor: "pointer" },
-  head: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  brand: { fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", color: C.muted },
-  stamp: { fontSize: 11, color: C.faint, display: "flex", alignItems: "center", gap: 6 },
-  label: { fontSize: 10.5, fontWeight: 700, letterSpacing: "0.1em", color: C.muted, margin: "10px 0 4px" },
-  row: { display: "grid", gridTemplateColumns: "46px 1fr auto", gap: 8, alignItems: "baseline", padding: "5px 0", borderTop: `1px solid ${C.line}` },
-  time: { fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
-  title: { fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  sub: { fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  right: { fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
-  fcb: { borderRadius: 14, padding: "10px 12px", background: "linear-gradient(135deg, rgba(220,43,58,0.22), rgba(220,43,58,0.06))", border: "1px solid rgba(220,43,58,0.35)" },
+  card: {
+    boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
+    color: "#F2F4F7", background: "rgba(28,30,36,0.78)", backdropFilter: "blur(30px) saturate(1.4)", WebkitBackdropFilter: "blur(30px) saturate(1.4)",
+    boxShadow: "0 6px 24px rgba(0,0,0,0.25), inset 0 0 0 0.5px rgba(255,255,255,0.12)", display: "flex", flexDirection: "column",
+  },
+  head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
+  title: { fontSize: 13, fontWeight: 700, color: "#F2F4F7", letterSpacing: "0.01em" },
+  date: { fontSize: 12, fontWeight: 500, color: C.muted },
+  row: { display: "grid", gridTemplateColumns: "42px minmax(0,1fr) auto", columnGap: 8, alignItems: "center", height: 32, borderTop: `0.5px solid ${C.line}` },
+  time: { fontSize: 13, fontWeight: 600, fontVariantNumeric: "tabular-nums" },
+  name: { fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: "16px" },
+  sub: { fontSize: 11, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: "13px" },
+  right: { fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
 };
 
-const title = (e) => (e.sport === "f1" ? `${e.home.replace("Großer Preis", "GP")} · ${e.away}` : `${e.home} – ${e.away}`);
-const sub = (e) => (e.sport === "f1" ? e.place || "Formel 1" : (e.sport === "boxen" || e.sport === "mma" ? SPORT[e.sport] + " · " : "") + e.comp + (e.bayern ? "" : e.why && e.why !== e.comp ? " · " + e.why : ""));
+const label = (e) => (e.sport === "f1" ? `${e.home.replace("Großer Preis", "GP")} · ${e.away}` : `${e.home} – ${e.away}`);
+const subOf = (e) => (e.sport === "f1" ? "Formel 1" + (e.place ? " · " + e.place : "") : (e.sport === "fussball" ? "" : SPORT[e.sport] + " · ") + e.comp);
 
-function Row({ r }) {
+function Row({ r, first }) {
+  const st = { ...S.row, borderTop: first ? "none" : S.row.borderTop };
   if (r.group) {
     return (
-      <div style={S.row}>
+      <div style={st}>
         <span style={{ ...S.time, color: C.muted }}>{r.group.n}×</span>
-        <div style={{ minWidth: 0 }}><div style={S.title}>DFB-Pokal, weitere Spiele</div><div style={S.sub}>{r.group.times}{r.group.note ? " · " + r.group.note : ""}</div></div>
+        <div style={{ minWidth: 0 }}><div style={S.name}>DFB-Pokal{r.group.note ? ", " + r.group.note : ""}</div><div style={S.sub}>{r.group.times}</div></div>
+        <span />
+      </div>
+    );
+  }
+  if (r.series) {
+    return (
+      <div style={st}>
+        <span style={{ ...S.time, color: C.muted }}>läuft</span>
+        <div style={{ minWidth: 0 }}><div style={S.name}>{r.series.name}</div><div style={S.sub}>{SPORT[r.series.sport]}{r.series.place ? " · " + r.series.place : ""}</div></div>
         <span />
       </div>
     );
   }
   const e = r.ev;
+  const dim = e.done && !e.score;
   return (
-    <div style={{ ...S.row, opacity: e.done && !e.score ? 0.5 : 1 }}>
-      <span style={{ ...S.time, color: e.bayern ? C.fcbInk : "#EEF1F5" }}>{e.time}</span>
-      <div style={{ minWidth: 0 }}><div style={S.title}>{title(e)}</div><div style={{ ...S.sub, color: e.bayern ? C.fcbInk : C.muted }}>{sub(e)}</div></div>
-      <span style={{ ...S.right, color: e.live ? C.live : "#EEF1F5" }}>{e.live ? "LIVE" : e.score}</span>
+    <div style={{ ...st, opacity: dim ? 0.45 : 1 }}>
+      <span style={{ ...S.time, color: e.bayern ? C.fcb : "#F2F4F7" }}>{e.time}</span>
+      <div style={{ minWidth: 0 }}><div style={S.name}>{label(e)}</div><div style={{ ...S.sub, color: e.bayern ? C.fcb : C.muted }}>{subOf(e)}</div></div>
+      <span style={{ ...S.right, color: e.live ? C.live : "#F2F4F7" }}>{e.live ? (e.score || "LIVE") : e.score}</span>
     </div>
   );
 }
 
-export const render = ({ output, error }) => {
+export const render = ({ output }) => {
   let m = null;
   try { const d = parse(output); if (d) m = model(d, new Date()); } catch (e) { m = null; }
   const open = () => run(`open "${URL_APP}"`);
   if (!m) {
-    return <div style={S.card} onClick={open}><div style={S.brand}>SPORT BOARD</div><div style={{ ...S.sub, marginTop: 6 }}>Keine Verbindung, versuche es gleich wieder.</div></div>;
+    return (
+      <div style={S.card} onClick={open}>
+        <div style={S.head}><span style={S.title}>Sport heute</span></div>
+        <div style={{ ...S.sub, fontSize: 12.5 }}>Keine Verbindung. Das Widget versucht es in ein paar Minuten wieder.</div>
+      </div>
+    );
   }
   return (
     <div style={S.card} onClick={open}>
       <div style={S.head}>
-        <span style={S.brand}>SPORT BOARD</span>
-        <span style={S.stamp}><i style={{ width: 6, height: 6, borderRadius: 3, background: m.old ? "#E2B24C" : "#5BC48D", display: "inline-block" }} />{m.stamp}</span>
+        <span style={S.title}>Sport heute{m.old ? <span style={{ color: C.muted, fontWeight: 500 }}> · alter Stand</span> : ""}</span>
+        <span style={S.date}>{m.head}</span>
       </div>
-      {m.fcb && (
-        <div style={S.fcb}>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", color: C.fcbInk }}>FC BAYERN · {m.fcb.comp.toUpperCase()}</div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 10, marginTop: 6 }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ ...S.title, fontSize: 15, fontWeight: 700 }}>{m.fcb.home}</div>
-              <div style={{ ...S.title, fontSize: 15, fontWeight: 700 }}>{m.fcb.away}</div>
-            </div>
-            <div style={{ textAlign: "right", flex: "none" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: m.fcb.live ? C.live : "#EEF1F5" }}>{m.fcb.live ? "LIVE" : m.fcb.time}</div>
-              <div style={{ fontSize: 11.5, color: C.muted }}>{m.fcb.rel}</div>
-            </div>
-          </div>
+      {m.rows.length ? (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {m.rows.map((r, i) => <Row key={i} r={r} first={i === 0} />)}
+          {m.more > 0 && <div style={{ ...S.sub, paddingTop: 3 }}>+ {m.more} weitere im Board</div>}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, gap: 6 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Heute nichts</div>
+          {m.next && <div style={S.sub}>Als Nächstes: {m.next.when} · {label(m.next.e)}</div>}
         </div>
       )}
-      <div style={S.label}>HEUTE</div>
-      {m.today.length ? m.today.map((r, i) => <Row key={"t" + i} r={r} />) : <div style={{ ...S.sub, padding: "4px 0" }}>Heute steht {m.fcb && m.fcb.rel !== "morgen" && m.fcb.key === fDay.format(new Date()) ? "sonst " : ""}nichts an.</div>}
-      {m.running.length > 0 && <div style={{ ...S.sub, paddingTop: 6 }}>Läuft: {m.running.map((s) => s.name).join(", ")}</div>}
-      {m.days.map((d) => (
-        <div key={d.label}>
-          <div style={S.label}>{d.label.toUpperCase()}</div>
-          {d.rows.map((r, i) => <Row key={d.label + i} r={r} />)}
-        </div>
-      ))}
     </div>
   );
 };
