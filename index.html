@@ -307,8 +307,8 @@ h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; 
   var PAGES = [
     { k: 'heute', n: 'Heute', i: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>' },
     { k: 'kal', n: 'Kalender', i: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
-    { k: 'liste', n: 'Liste', i: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="0.9"/><circle cx="4.8" cy="12" r="0.9"/><circle cx="4.8" cy="17.5" r="0.9"/>' },
-    { k: 'tab', n: 'Tabellen', i: '<path d="M4 20v-8h5v8M9.5 20V4.5h5V20M15 20v-5h5v5"/>' }
+    { k: 'tab', n: 'Tabellen', i: '<path d="M4 20v-8h5v8M9.5 20V4.5h5V20M15 20v-5h5v5"/>' },
+    { k: 'liste', n: 'Liste', i: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="0.9"/><circle cx="4.8" cy="12" r="0.9"/><circle cx="4.8" cy="17.5" r="0.9"/>' }
   ];
   var state = { sport: 'alle', page: 'heute', month: null, sel: null, more: false, tbl: 'bl', view: 'tab', rd: {} };
   try {
@@ -435,17 +435,17 @@ h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; 
     var html = '<section class="panel"><div class="ph"><h2>Heute</h2><span class="h2-sub">' + esc(dowLong.format(kd) + ', ' + dayMonth.format(kd)) + '</span></div>' + dayList(c.today, c, false) + '</section>';
     var cand = [];
     events.forEach(function (e) {
-      if (!passes(e) || e.key <= c.today) return;
+      if (!passes(e) || e.key <= c.today || diff(c.today, e.key) > 7) return;
       var p = parseKey(e.key);
       cand.push({ ev: e, at: e.timed ? e.t0.getTime() : Date.UTC(p.y, p.m - 1, p.d, 11) });
     });
     series.forEach(function (s) {
-      if (!passes(s) || s.from <= c.today) return;
+      if (!passes(s) || s.from <= c.today || diff(c.today, s.from) > 7) return;
       var p = parseKey(s.from);
       cand.push({ ser: s, at: Date.UTC(p.y, p.m - 1, p.d, 7) });
     });
     cand.sort(function (a, b) { return a.at - b.at; });
-    var rows = cand.slice(0, 8).map(function (x) {
+    var rows = cand.map(function (x) {
       var e = x.ev, s = x.ser, key = e ? e.key : s.from, sport = e ? e.sport : s.sport, d = diff(c.today, key);
       var kdd = keyDate(key);
       var left = '<b>' + esc(dowShort.format(kdd).replace('.', '') + ' ' + parseKey(key).d + '.') + '</b>';
@@ -456,7 +456,7 @@ h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; 
       return '<button class="nr s-' + sport + (e && e.bayern ? ' fcb' : '') + '" type="button" data-k="' + key + '"><span class="nr-d">' + left.replace('<b>', '').replace('</b>', '') + '<small>' + esc(small) + '</small></span>' +
         '<span class="nr-b"><b>' + teams + '</b><small>' + esc(sub) + '</small></span><span class="nr-c">' + (e && e.bayern ? 'FC Bayern · ' : '') + rel + '</span></button>';
     }).join('');
-    html += '<section class="panel"><div class="ph"><h2>Als Nächstes</h2></div>' + (rows ? '<div class="nrs">' + rows + '</div><button class="more-btn" type="button" data-page="liste">Alle Termine ansehen</button>' : '<div class="empty">Keine kommenden Termine in dieser Sportart.</div>') + '</section>';
+    html += '<section class="panel"><div class="ph"><h2>Als Nächstes</h2><span class="h2-sub">die nächsten 7 Tage</span></div>' + (rows ? '<div class="nrs">' + rows + '</div><button class="more-btn" type="button" data-page="liste">Alle Termine ansehen</button>' : '<div class="empty">In den nächsten 7 Tagen steht nichts an.</div><button class="more-btn" type="button" data-page="liste">Alle Termine ansehen</button>') + '</section>';
     document.getElementById('v-heute').innerHTML = html;
   }
 
