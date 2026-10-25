@@ -591,10 +591,10 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
   function sportFussball(c) {
     var fc = fcbCard(c, 30);
     var today = evsOn(c.today, 'fussball').filter(function (e) { return e.id !== fc.id; });
-    var left = (fc.html ? sec('FC Bayern', 'nächstes Spiel', fc.html) : '') +
-      (today.length ? sec('Heute', '', '<div class="card">' + dayRows(today, c.today, c, {}) + '</div>') : '') +
+    var leagues = (data.tables && data.tables.length) ? sec('Ligen', '', '<div id="tbl" style="display:flex;flex-direction:column;gap:10px">' + tablesHtml(c) + '</div>') : '';
+    var left = (fc.html ? sec('FC Bayern', 'nächstes Spiel', fc.html) : '') + leagues;
+    var right = (today.length ? sec('Heute', '', '<div class="card">' + dayRows(today, c.today, c, {}) + '</div>') : '') +
       sec('Nächste 14 Tage', '', upcomingDays(c, 'fussball', 14, fc.id) || '<div class="card"><div class="empty">Keine Spiele in den nächsten 14 Tagen.</div></div>');
-    var right = (data.tables && data.tables.length) ? sec('Ligen', '', '<div id="tbl" style="display:flex;flex-direction:column;gap:10px">' + tablesHtml(c) + '</div>') : '';
     return '<div class="cols two"><div>' + left + '</div><div>' + right + '</div></div>';
   }
   function sportF1(c) {
@@ -652,8 +652,10 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
   var MX_TAG = { bl: 'Top-4-Duell', pl: 'Big-Six-Duell', ll: 'Top-3-Duell', sa: 'Gipfeltreffen', l1: 'PSG gegen Monaco', cl: 'Top-Duell', pk: 'Top-4-Team' };
   function curRound(f, today) { for (var i = 0; i < f.list.length; i++) { if (f.list[i].last >= today) return f.list[i].n; } return f.list.length ? f.list[f.list.length - 1].n : 1; }
   function tablesHtml(c) {
+    var ORDER_T = ['cl', 'bl', 'pl', 'll', 'sa', 'l1', 'pk'];
     var tabs = (data.tables || []).slice();
-    if (fixtures.pk) tabs.splice(Math.min(1, tabs.length), 0, { key: 'pk', name: 'DFB-Pokal', rows: [] });
+    if (fixtures.pk) tabs.push({ key: 'pk', name: 'DFB-Pokal', rows: [] });
+    tabs.sort(function (a, b) { var i = ORDER_T.indexOf(a.key), j = ORDER_T.indexOf(b.key); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
     if (!tabs.length) return '';
     var cur = tabs.filter(function (t) { return t.key === state.tbl; })[0] || tabs[0];
     var isPK = cur.key === 'pk', hasFx = !!fixtures[cur.key];
