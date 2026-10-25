@@ -103,30 +103,47 @@ function buildSmall(w, L, now) {
   });
 }
 
-function buildList_(w, L, now, maxRows, fs, groupDays) {
-  const today = dayStart(now);
+function buildList_(w, L, now, maxRows, fs, multiDay) {
+  const today = dayStart(now), T = today.getTime();
+  const todays = L.items.filter(i => i.day.getTime() === T);
   const head = w.addStack(); head.centerAlignContent();
   addText(head, "SPORT BOARD", 9, C.faint, "b"); head.addSpacer();
-  const tdy = L.items.filter(i => i.day.getTime() === today.getTime()).length;
-  addText(head, tdy ? tdy + " heute" : "heute frei", 9, tdy ? C.text : C.faint, "m");
-  w.addSpacer(5);
-  let rows = 0, lastDay = null;
-  if (L.running.length && rows < maxRows) {
+  addText(head, todays.length ? "HEUTE · " + todays.length : "HEUTE FREI", 9, todays.length ? C.text : C.faint, "b");
+  w.addSpacer(6);
+
+  // laufende Turniere (Golf/Tennis) als eine Zeile
+  if (L.running.length) {
     const r = L.running.map(s => (ICON[s.sport] || "") + " " + s.name).slice(0, 2).join("  ·  ");
-    addText(w, "Läuft: " + r, fs - 2, C.dim, "r"); w.addSpacer(3); rows++;
+    addText(w, "Läuft: " + r, fs - 2, C.dim, "r"); w.addSpacer(4); maxRows--;
   }
+
+  // Gruppen nach Tag bilden
+  const groups = [];
   for (const it of L.items) {
-    if (rows >= maxRows) break;
-    if (groupDays && (lastDay === null || it.day.getTime() !== lastDay)) {
-      if (lastDay !== null) w.addSpacer(3);
-      addText(w, dayLabel(it.day, today).toUpperCase(), fs - 3, C.faint, "b");
-      w.addSpacer(1); lastDay = it.day.getTime(); rows++;
-      if (rows >= maxRows) break;
-    }
-    eventRow(w, it, today, { fs, timeW: fs * 3.4, showComp: groupDays || fs > 11 });
-    w.addSpacer(2); rows++;
+    const g = groups[groups.length - 1];
+    if (g && g.day === it.day.getTime()) g.items.push(it); else groups.push({ day: it.day.getTime(), date: it.day, items: [it] });
   }
-  if (rows === 0 || (!L.items.length && !L.running.length)) emptyHint(w, "Nichts angesetzt", fs);
+  // Mittel: nur der erste Tag (heute, sonst nächster Tag mit Hinweis). Groß: mehrere Tage.
+  const shown = multiDay ? groups.slice(0, 4) : groups.slice(0, 1);
+  if (!shown.length) { emptyHint(w, "Nichts angesetzt", fs); w.addSpacer(); return; }
+  if (!todays.length) { addText(w, "Heute nichts angesetzt", fs - 1, C.dim, "r"); w.addSpacer(5); }
+
+  let rows = 0, left = 0;
+  for (const g of shown) {
+    if (rows >= maxRows - 1) { left += g.items.length; continue; }
+    if (multiDay || g.day !== T) {
+      addText(w, dayLabel(g.date, today).toUpperCase() + (g.day === T ? "" : "  ·  " + g.items.length + (g.items.length === 1 ? " Spiel" : " Spiele")), fs - 3, g.day === T ? C.text : C.dim, "b");
+      w.addSpacer(2); rows++;
+    }
+    for (let i = 0; i < g.items.length; i++) {
+      if (rows >= maxRows) { left += g.items.length - i; break; }
+      eventRow(w, g.items[i], today, { fs, timeW: fs * 3.4, showComp: true });
+      w.addSpacer(3); rows++;
+    }
+    w.addSpacer(4);
+  }
+  if (left > 0) addText(w, "+ " + left + " weitere", fs - 3, C.faint, "m");
+  w.addSpacer();
 }
 
 function buildLock(w, L, now, inline) {
@@ -155,7 +172,7 @@ async function main() {
       w.backgroundColor = C.bg;
       w.setPadding(12, 14, 10, 14);
     }
-    if (fam === "small") buildSmall(w, L, now);
+    if (fam === "small") buildSmall(w, L, now); 
     else if (fam === "medium") buildList_(w, L, now, 5, 12, false);
     else if (fam === "large") buildList_(w, L, now, 14, 12, true);
     else if (fam === "extraLarge") buildList_(w, L, now, 14, 13, true);
