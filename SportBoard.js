@@ -79,14 +79,14 @@ function compLabel(e) {
   return e.comp;
 }
 
-function eventRow(parent, it, fs) {
+function eventRow(parent, it, fs, noComp) {
   const row = parent.addStack(); row.centerAlignContent();
   row.spacing = 6;
-  const t = row.addStack(); t.size = new Size(Math.round(fs * 3.5), 0);
+  row.spacing = noComp ? 4 : 6;
+  const t = row.addStack(); t.size = new Size(Math.round(fs * (noComp ? 3.1 : 3.5)), 0);
   addText(t, timeLabel(it), fs - 1, it.e.bayern ? C.bayern : C.dim, "m");
   addText(row, (ICON[it.e.sport] || "•") + " " + (it.e.short || it.e.home), fs, it.e.bayern ? C.bayern : C.text, "b");
-  row.addSpacer();
-  addText(row, compLabel(it.e), Math.max(fs - 4, 9), C.faint, "r");
+  if (!noComp) { row.addSpacer(); addText(row, compLabel(it.e), Math.max(fs - 4, 9), C.faint, "r"); }
   return row;
 }
 
@@ -99,7 +99,8 @@ function availHeight(fam) {
 }
 const rowH = fs => fs * 1.25 + 3;
 
-function layout(lines, avail, maxFs, minFs) {
+function layout(lines, avail, maxFs, minFs, rhf) {
+  const rowH = rhf || ((fs) => fs * 1.25 + 3);
   // lines: {k:"ev"|"hdr"|"run"|"more", ...}; Höhe je Typ
   const total = fs => lines.reduce((a, l) => a + (l.k === "ev" ? rowH(fs) : rowH(fs - 4)), 0);
   let moreCount = 0;
@@ -126,17 +127,28 @@ function header(w, todays) {
 }
 
 function buildSmall(w, L, now) {
-  const today = dayStart(now);
-  addText(w, "SPORT BOARD", 9, C.faint, "b");
-  w.addSpacer(8);
-  const next = L.items.slice(0, 2);
-  if (!next.length) { emptyHint(w, "Nichts angesetzt", 13); w.addSpacer(); return; }
-  next.forEach((it, i) => {
-    if (i) w.addSpacer(12);
-    addText(w, dayLabel(it.day, today).toUpperCase() + (it.hasTime ? " · " + timeLabel(it) : ""), 11, it.e.bayern ? C.bayern : C.dim, "b");
-    addText(w, (ICON[it.e.sport] || "") + " " + it.e.short, 18, it.e.bayern ? C.bayern : C.text, "b");
-    addText(w, compLabel(it.e), 10, C.faint, "r");
-  });
+  const today = dayStart(now), T = today.getTime();
+  const todays = L.items.filter(i => i.day.getTime() === T);
+  header(w, todays.length);
+  const lines = [];
+  if (L.running.length) lines.push({ k: "run", text: L.running.map(s => (ICON[s.sport] || "") + " " + s.name).slice(0, 2).join(" · ") });
+  let list = todays;
+  if (!todays.length) {
+    lines.push({ k: "hdr", text: "Heute nichts angesetzt", dim: true });
+    const first = L.items[0];
+    list = first ? L.items.filter(i => i.day.getTime() === first.day.getTime()) : [];
+    if (first) lines.push({ k: "hdr", text: dayLabel(first.day, today).toUpperCase(), dim: true });
+  }
+  list.forEach(it => lines.push({ k: "ev", it }));
+  if (!list.length && !L.running.length) lines.push({ k: "hdr", text: "Nichts angesetzt", dim: true });
+  const { fs, gap, lines: L2 } = layout(lines, availHeight("small") + 4, 17, 10, f => f * 1.2 + 2);
+  for (const l of L2) {
+    if (l.k === "ev") eventRow(w, l.it, fs, true);
+    else if (l.k === "run") addText(w, l.text, fs - 3, C.dim, "r");
+    else if (l.k === "more") addText(w, l.text, fs - 3, C.faint, "m");
+    else addText(w, l.text, fs - 3, l.dim ? C.dim : C.text, "b");
+    w.addSpacer(Math.min(gap, 5));
+  }
   w.addSpacer();
 }
 
