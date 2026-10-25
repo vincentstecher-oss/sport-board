@@ -19,6 +19,7 @@
 @font-face { font-family: 'Big Shoulders Display'; src: url('fonts/big-shoulders.woff2') format('woff2'); font-weight: 100 900; font-style: normal; font-display: swap; }
 </style>
 <meta name="color-scheme" content="dark">
+<meta name="app-version" content="2d5c2a1db6">
 <style>
 /* Sport Board: Übersicht, Kalender, Sport. Dunkel und ruhig, Rot nur für den FC Bayern, jede Sportseite mit eigenem Kopfbild. */
 :root {
@@ -846,6 +847,8 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
     busy = true; lastCheck = Date.now();
     var st = document.getElementById('stamp'); st.classList.add('busy');
     fetch(location.pathname + '?fresh=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (html) {
+      var vm = html.match(/<meta name="app-version" content="([^"]+)">/), cur = document.querySelector('meta[name="app-version"]');
+      if (vm && cur && vm[1] !== cur.getAttribute('content')) { location.reload(); return; }
       var m = html.match(RE_DATA); if (!m) throw new Error('nodata');
       var nd = JSON.parse(m[1]);
       if (new Date(nd.asOf) > new Date(data.asOf)) { ingest(nd); render(); toast('Neue Daten geladen'); }
