@@ -100,7 +100,7 @@ export function model(data, now) {
 
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
-const TON = "16,18,23"; // #101217
+const TON = "11,12,15"; // #0B0C0F
 const GLAS = 0.94;
 const BLUR = 28;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
