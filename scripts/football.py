@@ -181,13 +181,16 @@ def main(dry=False):
     data['top4'] = tops
     hl = {
         'bl': lambda n, r: r <= 4 or n == BAYERN, 'pl': lambda n, r: r <= 4 or n in BIG6, 'll': lambda n, r: r <= 4 or n in LL3,
-        'sa': lambda n, r: r <= 4 or n in SA4, 'l1': lambda n, r: r <= 4 or n in L1, 'cl': lambda n, r: n == BAYERN,
+        'sa': lambda n, r: r <= 4 or n in SA4, 'l1': lambda n, r: r <= 4 or n in L1, 'cl': lambda n, r: r <= 8 or n == BAYERN,
     }
     data['tables'] = [{'key': k, 'name': tbl_old.get(k, {}).get('name', LEAGUES[k][1]), 'rows': table(fixtures[k], hl[k])} for k in LEAGUES if k in fixtures]
 
     # 3) Markierungen in den Spielplänen
     bl_teams = set(fixtures['bl']['teams'])
-    top_set = {BAYERN} | BIG6 | LL3 | SA4 | L1 | {t for v in tops.values() for t in v}
+    # CL: Duelle zwischen Teams der CL-Top-8 (Ligaphase) und Vincents Lieblingsteams (Bayern, BL-Top-4, Big Six, ...)
+    cl_top8 = [r['t'] for r in table(fixtures['cl'], lambda n, r: False)[:8]] if 'cl' in fixtures else []
+    data['top4']['cl'] = cl_top8
+    top_set = {BAYERN} | set(top4) | BIG6 | LL3 | SA4 | L1 | set(cl_top8)
     def flag(key, h, a):
         if BAYERN in (h, a):
             return 1
@@ -239,7 +242,7 @@ def main(dry=False):
                 if BAYERN in (h, a):
                     e['why'] = 'FC Bayern'; e['bayern'] = True
                 else:
-                    is_top4 = key in tops and h in tops[key] and a in tops[key]
+                    is_top4 = key != 'cl' and key in tops and h in tops[key] and a in tops[key]
                     e['why'] = 'Deutsches Team' if m[4] == 2 else 'Top-4-Duell' if is_top4 else WHY[key]; e.pop('bayern', None)
                 if dt:
                     e['start'] = board.iso(dt); e.pop('date', None)
@@ -282,7 +285,7 @@ def main(dry=False):
             if r.get('t') == LEAGUES[k][1] and k in tops:
                 r['d'] = f'{txt}, dazu alle Duelle der aktuellen Top 4: {", ".join(tops[k])}'
         if r.get('t') == 'Champions League':
-            r['d'] = 'Duelle der Teams aus den obigen Regeln und der Top 4 aller Ligen untereinander und alle Spiele deutscher Teams'
+            r['d'] = 'Duelle der aktuellen CL-Top-8 und deiner Lieblingsteams aus den Ligaregeln (Bayern, Bundesliga-Top-4, Big Six, Real, Barcelona, Atlético, Inter, Milan, Juventus, Neapel, PSG, Monaco) untereinander und alle Spiele deutscher Teams'
         if r.get('t') == 'DFB-Pokal':
             r['d'] = f'Alle Spiele des DFB-Pokals. Spiele des FC Bayern und der Bundesliga-Top-4 ({", ".join(t for t in top4 if t != BAYERN)}) sind hervorgehoben'
     notes = [n for n in data.get('notes', []) if not n.startswith('Die Bundesliga-Top-4') and not n.startswith('Top-4-Duelle') and not n.startswith('Tabellen:')]

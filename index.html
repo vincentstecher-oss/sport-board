@@ -653,7 +653,7 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
   }
 
   // ---------- Tabellen und Spieltage ----------
-  var TBL_NOTE = { bl: 'Markiert sind die aktuellen Top 4 und Bayern.', pl: 'Markiert sind die aktuellen Top 4 und die Big Six.', ll: 'Markiert sind die aktuellen Top 4 und Real, Barcelona und Atlético.', sa: 'Markiert sind die aktuellen Top 4 und Inter, Milan, Juventus und Neapel.', l1: 'Markiert sind die aktuellen Top 4 und Paris und Monaco.', cl: 'Ligaphase. Platz 1 bis 8 direkt weiter, 9 bis 24 in die Play-offs.' };
+  var TBL_NOTE = { bl: 'Markiert sind die aktuellen Top 4 und Bayern.', pl: 'Markiert sind die aktuellen Top 4 und die Big Six.', ll: 'Markiert sind die aktuellen Top 4 und Real, Barcelona und Atlético.', sa: 'Markiert sind die aktuellen Top 4 und Inter, Milan, Juventus und Neapel.', l1: 'Markiert sind die aktuellen Top 4 und Paris und Monaco.', cl: 'Ligaphase. Platz 1 bis 8 direkt weiter, 9 bis 24 in die Play-offs. Markiert sind die Top 8 und Bayern.' };
   var MX_TAG = { bl: 'Top-4-Duell', pl: 'Big-Six-Duell', ll: 'Top-3-Duell', sa: 'Gipfeltreffen', l1: 'PSG gegen Monaco', cl: 'Top-Duell', pk: 'Top-4-Team' };
   function curRound(f, today) { for (var i = 0; i < f.list.length; i++) { if (f.list[i].last >= today) return f.list[i].n; } return f.list.length ? f.list[f.list.length - 1].n : 1; }
   function tablesHtml(c) {
@@ -705,7 +705,7 @@ svg.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: rou
       var bay = /Bayern/.test(hn + ' ' + an);
       var cls = 'mx' + (m.fl === 1 ? (bay ? ' fcb' : ' hl') : m.fl === 2 ? ' de' : '');
       var t4 = (data.top4 || {})[cur.key] || [];
-      var tag = m.fl === 1 ? (bay ? 'FC Bayern' : (t4.indexOf(hn) >= 0 && t4.indexOf(an) >= 0 ? 'Top-4-Duell' : (MX_TAG[cur.key] || ''))) : m.fl === 2 ? 'Deutsches Team' : '';
+      var tag = m.fl === 1 ? (bay ? 'FC Bayern' : (cur.key !== 'cl' && t4.indexOf(hn) >= 0 && t4.indexOf(an) >= 0 ? 'Top-4-Duell' : (MX_TAG[cur.key] || ''))) : m.fl === 2 ? 'Deutsches Team' : '';
       var live = m.timed && !m.sc && m.t0 <= c.now && c.now < new Date(m.t0.getTime() + 115 * 60000);
       html += '<div class="' + cls + '"><span class="mt">' + (m.timed ? hhmm(m.t0) : 'offen') + '</span><span class="mm"><b>' + esc(hn) + ' – ' + esc(an) + '</b>' + (tag ? '<small>' + esc(tag) + '</small>' : '') + '</span>' +
         (live ? '<span class="pill live">Live</span>' : '<span class="ms">' + esc(m.sc ? m.sc.replace('-', ':') : '') + '</span>') + '</div>';
