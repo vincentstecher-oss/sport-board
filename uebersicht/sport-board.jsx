@@ -99,12 +99,15 @@ export function model(data, now) {
 }
 
 // ---------- Darstellung ----------
+// Glas-Look wie die Apple-Widgets: Farbton #141726, GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe des Hintergrunds
+const GLAS = 0.55;
+const BLUR = 28;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#FFFFFF", background: "rgba(20,23,38,0.92)" /* #141726 */, backdropFilter: "blur(40px) saturate(1.6)", WebkitBackdropFilter: "blur(40px) saturate(1.6)",
-    boxShadow: "0 6px 20px rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
+    color: "#FFFFFF", background: `rgba(20,23,38,${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(1.8) brightness(0.8)`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(1.8) brightness(0.8)`,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
   },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
   title: { fontSize: 13, fontWeight: 700, color: "#FFFFFF", letterSpacing: "0.01em" },
