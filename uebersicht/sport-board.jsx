@@ -113,7 +113,7 @@ const S = {
     color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`,
     boxShadow: LIQUID
       ? "0 10px 30px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2), inset 1.5px 1.5px 0.5px -0.5px rgba(255,255,255,0.45), inset -1px -1px 0.5px -0.5px rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 0 18px rgba(255,255,255,0.05)"
-      : "inset 0 0 0 0.5px rgba(255,255,255,0.07)",
+      : "none",
     display: "flex", flexDirection: "column", position: "relative",
   },
   // Glanzschicht für den Liquid-Glass-Effekt (liegt über dem Glas, unter dem Inhalt)
