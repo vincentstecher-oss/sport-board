@@ -1,8 +1,8 @@
 // Sport Board – Widget für Übersicht (macOS-Schreibtisch), mittlere Apple-Widget-Größe, nur heute.
 // Installation: Datei in den Widget-Ordner von Übersicht legen (Menüleiste: Übersicht > Open Widgets Folder).
-// Position: sitzt links unter den Apple-Widgets Uhr und Kalender (gemessen auf Vincents MacBook: Apple-Widgets
-// 14 pt vom linken Rand, Abstand 16–17 pt, Notiz und Kalender enden 741 pt unter der Bildschirmoberkante;
-// Übersicht zählt ab Unterkante der Menüleiste (39 pt), daher top 718). Zum Verschieben top/left ändern.
+// Position: unter dem Batterie-Widget von BetterMacWidgets (gemessen auf Vincents Schreibtisch: Widgets 16 pt vom linken Rand,
+// Abstand 12–13 pt, Batterie-Widget endet 753 pt unter der Bildschirmoberkante; Übersicht zählt ab Unterkante
+// der Menüleiste (39 pt), daher top 726). Zum Verschieben top/left ändern.
 import { run } from "uebersicht";
 
 const URL_APP = "https://vincentstecher-oss.github.io/sport-board/";
@@ -10,8 +10,8 @@ export const command = `curl -sfL --max-time 20 "${URL_APP}?w=$(date +%s)"`;
 export const refreshFrequency = 5 * 60 * 1000;
 
 export const className = `
-  top: 718px;
-  left: 14px;
+  top: 726px;
+  left: 16px;
   width: 344px;
   height: 164px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
