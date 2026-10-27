@@ -2,7 +2,7 @@
 // Installation: Datei in den Widget-Ordner von Übersicht legen (Menüleiste: Übersicht > Open Widgets Folder).
 // Position: unter dem Batterie-Widget von BetterMacWidgets (gemessen auf Vincents Schreibtisch: Widgets 16 pt vom linken Rand,
 // Abstand 12–13 pt, Batterie-Widget endet 753 pt unter der Bildschirmoberkante; Übersicht zählt ab Unterkante
-// der Menüleiste (39 pt), daher top 726). Zum Verschieben top/left ändern.
+// der Menüleiste (39 pt), daher top 732). Zum Verschieben top/left ändern.
 import { run } from "uebersicht";
 
 const URL_APP = "https://vincentstecher-oss.github.io/sport-board/";
@@ -10,7 +10,7 @@ export const command = `curl -sfL --max-time 20 "${URL_APP}?w=$(date +%s)"`;
 export const refreshFrequency = 5 * 60 * 1000;
 
 export const className = `
-  top: 726px;
+  top: 732px;
   left: 16px;
   width: 344px;
   height: 164px;
