@@ -100,14 +100,14 @@ export function model(data, now) {
 
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
-const TON = "20,25,32"; // Schiefergrau wie die Uhr von BetterMacWidgets darüber
+const TON = "24,25,28"; // Schiefergrau wie die Uhr von BetterMacWidgets darüber
 const GLAS = 0.85;
-const BLUR = 34;
+const BLUR = 50;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(1.4) brightness(0.6)`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(1.4) brightness(0.6)`,
+    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(0.8) brightness(0.6)`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(0.8) brightness(0.6)`,
     boxShadow: "0 4px 16px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
   },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
