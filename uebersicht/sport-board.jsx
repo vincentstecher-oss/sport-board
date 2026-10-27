@@ -103,12 +103,22 @@ export function model(data, now) {
 const TON = "24,25,28"; // Schiefergrau wie die Uhr von BetterMacWidgets darüber
 const GLAS = 0.85;
 const BLUR = 50;
+// Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
+const LIQUID = true;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
     color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(0.8) brightness(0.6)`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(0.8) brightness(0.6)`,
-    boxShadow: "0 4px 16px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
+    boxShadow: LIQUID
+      ? "0 10px 30px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2), inset 1.5px 1.5px 0.5px -0.5px rgba(255,255,255,0.45), inset -1px -1px 0.5px -0.5px rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 0 18px rgba(255,255,255,0.05)"
+      : "0 4px 16px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.10)",
+    display: "flex", flexDirection: "column", position: "relative",
+  },
+  // Glanzschicht für den Liquid-Glass-Effekt (liegt über dem Glas, unter dem Inhalt)
+  sheen: {
+    position: "absolute", inset: 0, borderRadius: 22, pointerEvents: "none",
+    background: "radial-gradient(120% 70% at 18% -12%, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 45%, rgba(255,255,255,0) 70%), linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.04) 100%)",
   },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
   title: { fontSize: 13, fontWeight: 700, color: "#FFFFFF", letterSpacing: "0.01em" },
@@ -161,6 +171,7 @@ export const render = ({ output }) => {
   if (!m) {
     return (
       <div style={S.card} onClick={open}>
+        {LIQUID && <div style={S.sheen} />}
         <div style={S.head}><span style={S.title}>Sport heute</span></div>
         <div style={{ ...S.sub, fontSize: 12.5 }}>Keine Verbindung. Das Widget versucht es in ein paar Minuten wieder.</div>
       </div>
@@ -168,6 +179,7 @@ export const render = ({ output }) => {
   }
   return (
     <div style={S.card} onClick={open}>
+        {LIQUID && <div style={S.sheen} />}
       <div style={S.head}>
         <span style={S.title}>Sport heute{m.old ? <span style={{ color: C.muted, fontWeight: 500 }}> · alter Stand</span> : ""}</span>
         <span style={S.date}>{m.head}</span>
