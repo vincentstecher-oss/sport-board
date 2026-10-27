@@ -5,8 +5,8 @@ Lädt die Spielplan-Feeds von fixturedownload.com (Bundesliga, Premier League, L
 Champions-League-Ligaphase) und aktualisiert im Datenblock von index.html:
   - fixtures: Anstoßzeiten und Ergebnisse aller Spieltage
   - tables: aus den Ergebnissen berechnet (Punkte, dann Tordifferenz, dann Tore)
-  - events: Fußball-Termine nach Vincents Regeln (Bayern, Top-4-Duelle, Big Six, ...)
-  - Bundesliga-Top-4 in Regeln, Hinweisen und DFB-Pokal-Markierungen
+  - events: Fußball-Termine nach Vincents Regeln (Bayern, Top-4-Duelle in allen Ligen, Big Six, ...)
+  - Top 4 jeder Liga (top4 im Datenblock), in Regeln, Hinweisen und DFB-Pokal-Markierungen
 Der DFB-Pokal und K.-o.-Runden der Champions League stehen nicht im Feed; die pflegt der Claude-Lauf.
 
 Aufruf: python3 scripts/football.py [--dry-run]
@@ -61,6 +61,7 @@ LL3 = {'Real Madrid', 'FC Barcelona', 'Atlético Madrid'}
 SA4 = {'Inter Mailand', 'AC Mailand', 'Juventus', 'SSC Neapel'}
 L1 = {'Paris Saint-Germain', 'AS Monaco'}
 WHY = {'bl': 'Top-4-Duell', 'pl': 'Big-Six-Duell', 'll': 'Top-3-Duell', 'sa': 'Gipfeltreffen', 'l1': 'PSG gegen Monaco', 'cl': 'Top-Duell'}
+TOP4_LEAGUES = ('bl', 'pl', 'll', 'sa', 'l1')  # in diesen Ligen zählen Duelle der aktuellen Plätze 1 bis 4
 SKIP_WORDS = {'FC', 'AC', 'SC', 'SSC', 'AS', 'US', 'RC', 'CA', 'AFC', 'CFC', 'OGC', 'OSC', 'RB', 'SV', 'TSG', 'VfB', 'VfL', 'FSV', '1.', 'Real', 'Club', 'Stade', 'Olympique', 'Borussia', 'Bayer', 'Sporting'}
 
 
@@ -173,24 +174,26 @@ def main(dry=False):
         if changed:
             log.append(f'{comp}: {changed} Spieltage aktualisiert')
 
-    # 2) Tabellen und Bundesliga-Top-4
+    # 2) Tabellen und Top 4 jeder Liga (aktuelle Plätze 1 bis 4)
     tbl_old = {t['key']: t for t in data.get('tables', [])}
-    bl = table(fixtures['bl'], lambda n, r: False)
-    top4 = [r['t'] for r in bl[:4]]
+    tops = {k: [r['t'] for r in table(fixtures[k], lambda n, r: False)[:4]] for k in TOP4_LEAGUES if k in fixtures}
+    top4 = tops['bl']
+    data['top4'] = tops
     hl = {
-        'bl': lambda n, r: r <= 4 or n == BAYERN, 'pl': lambda n, r: n in BIG6, 'll': lambda n, r: n in LL3,
-        'sa': lambda n, r: n in SA4, 'l1': lambda n, r: n in L1, 'cl': lambda n, r: n == BAYERN,
+        'bl': lambda n, r: r <= 4 or n == BAYERN, 'pl': lambda n, r: r <= 4 or n in BIG6, 'll': lambda n, r: r <= 4 or n in LL3,
+        'sa': lambda n, r: r <= 4 or n in SA4, 'l1': lambda n, r: r <= 4 or n in L1, 'cl': lambda n, r: n == BAYERN,
     }
     data['tables'] = [{'key': k, 'name': tbl_old.get(k, {}).get('name', LEAGUES[k][1]), 'rows': table(fixtures[k], hl[k])} for k in LEAGUES if k in fixtures]
 
     # 3) Markierungen in den Spielplänen
     bl_teams = set(fixtures['bl']['teams'])
-    top_set = {BAYERN} | set(top4) | BIG6 | LL3 | SA4 | L1
+    top_set = {BAYERN} | BIG6 | LL3 | SA4 | L1 | {t for v in tops.values() for t in v}
     def flag(key, h, a):
         if BAYERN in (h, a):
             return 1
         both = lambda s: h in s and a in s  # noqa: E731
-        if key == 'bl': return 1 if both(set(top4)) else 0
+        if key in tops and both(set(tops[key])): return 1
+        if key == 'bl': return 0
         if key == 'pl': return 1 if both(BIG6) else 0
         if key == 'll': return 1 if both(LL3) else 0
         if key == 'sa': return 1 if both(SA4) else 0
@@ -236,7 +239,8 @@ def main(dry=False):
                 if BAYERN in (h, a):
                     e['why'] = 'FC Bayern'; e['bayern'] = True
                 else:
-                    e['why'] = 'Deutsches Team' if m[4] == 2 else WHY[key]; e.pop('bayern', None)
+                    is_top4 = key in tops and h in tops[key] and a in tops[key]
+                    e['why'] = 'Deutsches Team' if m[4] == 2 else 'Top-4-Duell' if is_top4 else WHY[key]; e.pop('bayern', None)
                 if dt:
                     e['start'] = board.iso(dt); e.pop('date', None)
                     if was_open:
@@ -268,13 +272,21 @@ def main(dry=False):
 
     # 5) Regeln und Hinweise zur Top 4
     t4 = ', '.join(top4)
+    extra = {'pl': 'Big Six untereinander: Arsenal, Chelsea, Manchester City, Manchester United, Liverpool, Tottenham',
+             'll': 'Real Madrid, FC Barcelona und Atlético untereinander', 'sa': 'Inter, Milan, Juventus und Neapel untereinander',
+             'l1': 'Paris Saint-Germain gegen Monaco'}
     for r in data.get('rules', []):
         if r.get('t') == 'Bundesliga':
             r['d'] = f'Duelle der aktuellen Top 4: {t4}'
+        for k, txt in extra.items():
+            if r.get('t') == LEAGUES[k][1] and k in tops:
+                r['d'] = f'{txt}, dazu alle Duelle der aktuellen Top 4: {", ".join(tops[k])}'
+        if r.get('t') == 'Champions League':
+            r['d'] = 'Duelle der Teams aus den obigen Regeln und der Top 4 aller Ligen untereinander und alle Spiele deutscher Teams'
         if r.get('t') == 'DFB-Pokal':
             r['d'] = f'Alle Spiele des DFB-Pokals. Spiele des FC Bayern und der Bundesliga-Top-4 ({", ".join(t for t in top4 if t != BAYERN)}) sind hervorgehoben'
-    notes = [n for n in data.get('notes', []) if not n.startswith('Die Bundesliga-Top-4') and not n.startswith('Tabellen:')]
-    notes.append(f'Die Bundesliga-Top-4 gelten nach Tabelle vom {today.day}.{today.month}. ({t4}) und passen sich automatisch an.')
+    notes = [n for n in data.get('notes', []) if not n.startswith('Die Bundesliga-Top-4') and not n.startswith('Top-4-Duelle') and not n.startswith('Tabellen:')]
+    notes.append(f'Top-4-Duelle: In allen Ligen erscheinen die Duelle der aktuellen Plätze 1 bis 4 (Tabelle vom {today.day}.{today.month}.) und passen sich automatisch an.')
     notes.append('Tabellen: aus den Ergebnissen der Spielpläne berechnet, bei Punktgleichheit nach Tordifferenz und Toren.')
     data['notes'] = notes
 
@@ -285,7 +297,7 @@ def main(dry=False):
     if os.environ.get('WARN_FILE'):
         pathlib.Path(os.environ['WARN_FILE']).write_text('\n'.join(warnings) + ('\n' if warnings else ''), encoding='utf-8')
     print('\n'.join(log) or 'Keine inhaltlichen Änderungen')
-    print('Top 4:', t4)
+    print('Top 4:', '; '.join(f'{k}: {", ".join(v)}' for k, v in tops.items()))
     if warnings:
         print('WARNUNGEN:\n' + '\n'.join(warnings))
     if not dry:
