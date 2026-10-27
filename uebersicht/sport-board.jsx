@@ -99,15 +99,15 @@ export function model(data, now) {
 }
 
 // ---------- Darstellung ----------
-const C = { muted: "rgba(235,240,247,0.55)", line: "rgba(255,255,255,0.08)", fcb: "#FF4D5E", live: "#FF453A" };
+const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#F2F4F7", background: "rgba(28,30,36,0.78)", backdropFilter: "blur(30px) saturate(1.4)", WebkitBackdropFilter: "blur(30px) saturate(1.4)",
-    boxShadow: "0 6px 24px rgba(0,0,0,0.25), inset 0 0 0 0.5px rgba(255,255,255,0.12)", display: "flex", flexDirection: "column",
+    color: "#FFFFFF", background: "linear-gradient(180deg, rgba(37,49,75,0.80) 0%, rgba(30,37,58,0.82) 55%, rgba(26,31,48,0.86) 100%)", backdropFilter: "blur(40px) saturate(1.6)", WebkitBackdropFilter: "blur(40px) saturate(1.6)",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
   },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
-  title: { fontSize: 13, fontWeight: 700, color: "#F2F4F7", letterSpacing: "0.01em" },
+  title: { fontSize: 13, fontWeight: 700, color: "#FFFFFF", letterSpacing: "0.01em" },
   date: { fontSize: 12, fontWeight: 500, color: C.muted },
   row: { display: "grid", gridTemplateColumns: "42px minmax(0,1fr) auto", columnGap: 8, alignItems: "center", height: 32, borderTop: `0.5px solid ${C.line}` },
   time: { fontSize: 13, fontWeight: 600, fontVariantNumeric: "tabular-nums" },
@@ -143,9 +143,9 @@ function Row({ r, first }) {
   const dim = e.done && !e.score && !e.res;
   return (
     <div style={{ ...st, opacity: dim ? 0.45 : 1 }}>
-      <span style={{ ...S.time, color: e.bayern ? C.fcb : "#F2F4F7" }}>{e.time}</span>
-      <div style={{ minWidth: 0 }}><div style={S.name}>{label(e)}</div><div style={{ ...S.sub, color: e.res ? "#F2F4F7" : e.bayern ? C.fcb : C.muted }}>{e.res || subOf(e)}</div></div>
-      <span style={{ ...S.right, color: e.live ? C.live : "#F2F4F7" }}>{e.live ? (e.score || "LIVE") : e.score}</span>
+      <span style={{ ...S.time, color: e.bayern ? C.fcb : "#FFFFFF" }}>{e.time}</span>
+      <div style={{ minWidth: 0 }}><div style={S.name}>{label(e)}</div><div style={{ ...S.sub, color: e.res ? "#FFFFFF" : e.bayern ? C.fcb : C.muted }}>{e.res || subOf(e)}</div></div>
+      <span style={{ ...S.right, color: e.live ? C.live : "#FFFFFF" }}>{e.live ? (e.score || "LIVE") : e.score}</span>
     </div>
   );
 }
