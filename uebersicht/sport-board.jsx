@@ -103,7 +103,7 @@ const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#FFFFFF", background: "rgba(28,36,56,0.92)" /* #1C2438, Apple-Widgets im Dunkelmodus */, backdropFilter: "blur(40px) saturate(1.6)", WebkitBackdropFilter: "blur(40px) saturate(1.6)",
+    color: "#FFFFFF", background: "rgba(33,50,77,0.92)" /* #21324D */, backdropFilter: "blur(40px) saturate(1.6)", WebkitBackdropFilter: "blur(40px) saturate(1.6)",
     boxShadow: "0 6px 20px rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.10)", display: "flex", flexDirection: "column",
   },
   head: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 },
