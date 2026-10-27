@@ -100,19 +100,20 @@ export function model(data, now) {
 
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
-const TON = "24,25,28"; // Schiefergrau wie die Uhr von BetterMacWidgets darüber
-const GLAS = 0.62;
-const BLUR = 140;
+const TON = "0,0,0"; // wie die Uhr von BetterMacWidgets: kein eigener Farbton, der verschwommene Hintergrund wird nur abgedunkelt
+const GLAS = 0.25;
+const BLUR = 50;
+const HELL = 0.36; // Helligkeit des Hintergrunds hinter dem Glas
 // Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
-const LIQUID = true;
+const LIQUID = false;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(0.9) brightness(0.7)`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(0.9) brightness(0.7)`,
+    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`,
     boxShadow: LIQUID
       ? "0 10px 30px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2), inset 1.5px 1.5px 0.5px -0.5px rgba(255,255,255,0.45), inset -1px -1px 0.5px -0.5px rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 0 18px rgba(255,255,255,0.05)"
-      : "0 4px 16px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.22), inset 0 0 0 0.5px rgba(255,255,255,0.10)",
+      : "inset 0 0 0 0.5px rgba(255,255,255,0.07)",
     display: "flex", flexDirection: "column", position: "relative",
   },
   // Glanzschicht für den Liquid-Glass-Effekt (liegt über dem Glas, unter dem Inhalt)
