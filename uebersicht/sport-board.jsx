@@ -114,7 +114,7 @@ const GLAS = 0.9;
 const BLUR = 0;
 const HELL = 0.3; // Helligkeit des Hintergrunds hinter dem Glas
 // Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
-const LIQUID = false;
+const LIQUID = true;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
