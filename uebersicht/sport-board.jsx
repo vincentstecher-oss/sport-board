@@ -10,7 +10,7 @@ export const command = `curl -sfL --max-time 20 "${URL_APP}?w=$(date +%s)"`;
 export const refreshFrequency = 5 * 60 * 1000;
 
 export const className = `
-  top: 732px;
+  top: 784px;
   left: 16px;
   width: 344px;
   height: 164px;
@@ -110,9 +110,9 @@ function groupTimes(list) {
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
 const TON = "22,22,22"; // #161616: schwarzer Ton, der verschwommene Hintergrund scheint abgedunkelt durch
-const GLAS = 0.8;
+const GLAS = 0.9;
 const BLUR = 0;
-const HELL = 0.36; // Helligkeit des Hintergrunds hinter dem Glas
+const HELL = 0.3; // Helligkeit des Hintergrunds hinter dem Glas
 // Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
 const LIQUID = false;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
