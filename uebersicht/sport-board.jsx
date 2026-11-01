@@ -110,16 +110,16 @@ function groupTimes(list) {
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
 const TON = "22,22,22"; // #161616: schwarzer Ton, der verschwommene Hintergrund scheint abgedunkelt durch
-const GLAS = 0.9;
+const GLAS = 0.55;
 const BLUR = 0;
-const HELL = 0.3; // Helligkeit des Hintergrunds hinter dem Glas
+const HELL = 1; // Helligkeit des Hintergrunds hinter dem Glas
 // Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
-const LIQUID = true;
+const LIQUID = false;
 const C = { muted: "rgba(214,224,245,0.62)", line: "rgba(255,255,255,0.09)", fcb: "#FF4D5E", live: "#FF453A" };
 const S = {
   card: {
     boxSizing: "border-box", width: 344, height: 164, padding: "13px 16px 12px", borderRadius: 22, overflow: "hidden", cursor: "pointer",
-    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`, WebkitBackdropFilter: `blur(${BLUR}px) saturate(1.1) brightness(${HELL})`,
+    color: "#FFFFFF", background: `rgba(${TON},${GLAS})`, backdropFilter: BLUR > 0 ? `blur(${BLUR}px) saturate(1.1) brightness(${HELL})` : "none", WebkitBackdropFilter: BLUR > 0 ? `blur(${BLUR}px) saturate(1.1) brightness(${HELL})` : "none",
     boxShadow: LIQUID
       ? "0 10px 30px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2), inset 1.5px 1.5px 0.5px -0.5px rgba(255,255,255,0.45), inset -1px -1px 0.5px -0.5px rgba(255,255,255,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 0 18px rgba(255,255,255,0.05)"
       : "none",
