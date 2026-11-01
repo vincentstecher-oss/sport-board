@@ -71,7 +71,7 @@ export function model(data, now) {
   let grouped = false;
   ordered.forEach((e) => {
     if (e.plain && plain.length > 2) {
-      if (!grouped) { grouped = true; rows.push({ group: { n: plain.length, times: [...new Set(plain.map((p) => p.time))].sort().join(" / "), note: plain[0].note || "" } }); }
+      if (!grouped) { grouped = true; rows.push({ group: { n: plain.length, times: groupTimes(plain), note: plain[0].note || "" } }); }
       return;
     }
     rows.push({ ev: e });
@@ -96,6 +96,15 @@ export function model(data, now) {
     next,
     old: asOf ? now - asOf > 26 * 3600000 : true,
   };
+}
+
+// Uhrzeiten einer Gruppe ohne Doppelte, sortiert (bewusst einfach geschrieben, weil Übersichts älterer Parser sonst streikt)
+function groupTimes(list) {
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    if (out.indexOf(list[i].time) < 0) out.push(list[i].time);
+  }
+  return out.sort().join(" / ");
 }
 
 // ---------- Darstellung ----------
