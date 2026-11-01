@@ -100,8 +100,8 @@ export function model(data, now) {
 
 // ---------- Darstellung ----------
 // Glas-Look wie die Apple-Widgets: Farbton TON (dunkel wie Uhr und Kalender darüber, gemessen auf Vincents Schreibtisch), GLAS = Deckkraft (0 = durchsichtig, 1 = deckend), BLUR = Unschärfe
-const TON = "0,0,0"; // wie die Uhr von BetterMacWidgets: kein eigener Farbton, der verschwommene Hintergrund wird nur abgedunkelt
-const GLAS = 0.25;
+const TON = "22,22,22"; // #161616: schwarzer Ton, der verschwommene Hintergrund scheint abgedunkelt durch
+const GLAS = 0.45;
 const BLUR = 50;
 const HELL = 0.36; // Helligkeit des Hintergrunds hinter dem Glas
 // Liquid Glass wie in macOS: heller Lichtrand oben links, Glanz oben, leichtes Leuchten innen. LIQUID = false schaltet es ab.
