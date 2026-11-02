@@ -7,7 +7,7 @@ Champions-League-Ligaphase) und aktualisiert im Datenblock von index.html:
   - tables: aus den Ergebnissen berechnet (Punkte, dann Tordifferenz, dann Tore)
   - events: Fußball-Termine nach Vincents Regeln (Bayern, Top-4-Duelle in allen Ligen, Big Six, ...)
   - Top 4 jeder Liga (top4 im Datenblock), in Regeln, Hinweisen und DFB-Pokal-Markierungen
-Der DFB-Pokal und K.-o.-Runden der Champions League stehen nicht im Feed; die pflegt der Claude-Lauf.
+Der DFB-Pokal steht nicht im Feed; seine Ergebnisse trägt scripts/results.py aus OpenLigaDB ein. K.-o.-Runden der Champions League pflegt der Claude-Lauf.
 
 Aufruf: python3 scripts/football.py [--dry-run]
 Unbekannte Teamnamen oder nicht erreichbare Feeds landen als Warnung in der Datei aus WARN_FILE; die betroffene Liga bleibt dann unverändert.
