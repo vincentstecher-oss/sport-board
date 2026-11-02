@@ -5,7 +5,8 @@ Befehle:
   python3 scripts/board.py push              Push-Text für heute ausgeben (oder NICHTS)
   python3 scripts/board.py status            Kurzer Lagebericht: laufende Turniere, Pokal, nächste Termine
   python3 scripts/board.py show SPORT        Termine einer Sportart kompakt auflisten (fussball, tennis, golf, boxen, mma, f1)
-  python3 scripts/board.py today             Heutige Termine und heutige Ligaspiele mit Ergebnis-Stand (für den Ergebnis-Lauf)
+  python3 scripts/board.py today             Heutige Termine und heutige Ligaspiele mit Ergebnis-Stand (für den Ergebnis-Lauf);
+                                             letzte Zeile "CLAUDE: NICHTS" oder "CLAUDE: <Anzahl> offen (<Sportarten>)"
   python3 scripts/board.py apply PATCH.json  Änderungen einspielen (siehe PATCH-FORMAT unten)
 
 PATCH-FORMAT (alle Schlüssel optional):
@@ -32,6 +33,10 @@ BERLIN = ZoneInfo('Europe/Berlin')
 RX = re.compile(r'(<script type="application/json" id="board-data">)([\s\S]*?)(</script>)')
 SPORTS = {'fussball', 'tennis', 'golf', 'boxen', 'mma', 'f1'}
 SNAME = {'fussball': 'Fußball', 'tennis': 'Tennis', 'golf': 'Golf', 'boxen': 'Boxen', 'mma': 'MMA', 'f1': 'Formel 1'}
+# Wettbewerb eines Fußball-Termins -> Spielplan (fixtures key); Ergebnisse dieser Spiele trägt die Action ein
+COMP_KEY = {'Bundesliga': 'bl', 'Premier League': 'pl', 'La Liga': 'll', 'Serie A': 'sa', 'Ligue 1': 'l1',
+            'Champions League': 'cl', 'DFB-Pokal': 'pk'}
+F1_AUTO = {'Rennen', 'Qualifying', 'Sprint'}  # F1-Sessions, die scripts/results.py aus Jolpica einträgt
 
 
 def load(path=INDEX):
@@ -137,6 +142,25 @@ def status(data):
     return '\n'.join(out)
 
 
+def auto_result(data, e):
+    """True, wenn die GitHub Action das Ergebnis dieses Termins selbst einträgt (scripts/results.py)."""
+    if e['sport'] == 'f1':
+        return e.get('away') in F1_AUTO
+    if e['sport'] != 'fussball' or not (e.get('start') or e['comp'] == 'DFB-Pokal'):
+        return False  # Ligaspiel ohne Anstoßzeit: kein Spielende bekannt, bleibt beim Claude-Lauf
+    f = next((f for f in data.get('fixtures', []) if f['key'] == COMP_KEY.get(e['comp'])), None)
+    return bool(f) and any(f['teams'][m[1]] == e['home'] and f['teams'][m[2]] == e['away'] for r in f['rounds'] for m in r['m'])
+
+
+def claude_line(data, day=None):
+    day = day or today_berlin()
+    todo = [e for e in data.get('events', []) if ev_day(e) == day and not e.get('result') and not auto_result(data, e)]
+    if not todo:
+        return 'CLAUDE: NICHTS'
+    sports = list(dict.fromkeys(SNAME[e['sport']] for e in sorted(todo, key=sort_key)))
+    return f"CLAUDE: {len(todo)} offen ({', '.join(sports)})"
+
+
 def today_list(data):
     day = today_berlin()
     out = [f'Heute (Berlin): {day.isoformat()}', 'TERMINE (id | Zeit | Begegnung | Wettbewerb | Ergebnis):']
@@ -153,6 +177,7 @@ def today_list(data):
                 d = (datetime.strptime(ts, '%y%m%d%H%M').replace(tzinfo=timezone.utc).astimezone(BERLIN).date() if len(ts) >= 10 else datetime.strptime(ts, '%y%m%d').date())
                 if d == day:
                     out.append(f"{f['key']} | {f['teams'][m[1]]} | {f['teams'][m[2]]} | {m[3] or '-'}")
+    out.append(claude_line(data, day))
     return '\n'.join(out)
 
 
