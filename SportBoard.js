@@ -43,7 +43,8 @@ function buildList(data, now) {
     out.push({ e, when, hasTime, day: dayStart(when) });
   }
   out.sort((a, b) => a.when - b.when || (b.e.bayern ? 1 : 0) - (a.e.bayern ? 1 : 0));
-  const running = (data.series || []).filter(s => parseDay(s.from) <= today && parseDay(s.to) >= today);
+  // Tennis-Turniere nie als „läuft“ zeigen, nur einzelne Matches (Zverev, Top-10-Duelle)
+  const running = (data.series || []).filter(s => s.sport !== "tennis" && parseDay(s.from) <= today && parseDay(s.to) >= today);
   return { items: out, running };
 }
 

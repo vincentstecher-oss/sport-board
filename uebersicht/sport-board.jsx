@@ -76,7 +76,8 @@ export function model(data, now) {
     }
     rows.push({ ev: e });
   });
-  const running = (data.series || []).filter((s) => s.from <= today && today <= s.to);
+  // Tennis-Turniere nie als „läuft“ zeigen, nur einzelne Matches (Zverev, Top-10-Duelle)
+  const running = (data.series || []).filter((s) => s.sport !== "tennis" && s.from <= today && today <= s.to);
   running.forEach((s) => rows.push({ series: s }));
 
   let next = null;
