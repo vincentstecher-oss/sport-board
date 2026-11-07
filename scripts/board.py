@@ -5,7 +5,7 @@ Befehle:
   python3 scripts/board.py push              Push-Text für heute ausgeben (oder NICHTS)
   python3 scripts/board.py status            Kurzer Lagebericht: laufende Turniere, Pokal, nächste Termine
   python3 scripts/board.py show SPORT        Termine einer Sportart kompakt auflisten (fussball, tennis, golf, boxen, mma, f1)
-  python3 scripts/board.py today             Heutige Termine und heutige Ligaspiele mit Ergebnis-Stand (für den Ergebnis-Lauf);
+  python3 scripts/board.py today             Heutige Termine, heutige Ligaspiele und offene Nachzügler von gestern (für den Ergebnis-Lauf);
                                              letzte Zeile "CLAUDE: NICHTS" oder "CLAUDE: <Anzahl> offen (<Sportarten>)"
   python3 scripts/board.py apply PATCH.json  Änderungen einspielen (siehe PATCH-FORMAT unten)
 
@@ -152,9 +152,14 @@ def auto_result(data, e):
     return bool(f) and any(f['teams'][m[1]] == e['home'] and f['teams'][m[2]] == e['away'] for r in f['rounds'] for m in r['m'])
 
 
+def open_for_claude(data, day):
+    """Offene Termine von day, deren Ergebnis die GitHub Action nicht selbst einträgt."""
+    return [e for e in data.get('events', []) if ev_day(e) == day and not e.get('result') and not auto_result(data, e)]
+
+
 def claude_line(data, day=None):
     day = day or today_berlin()
-    todo = [e for e in data.get('events', []) if ev_day(e) == day and not e.get('result') and not auto_result(data, e)]
+    todo = open_for_claude(data, day) + open_for_claude(data, day - timedelta(days=1))
     if not todo:
         return 'CLAUDE: NICHTS'
     sports = list(dict.fromkeys(SNAME[e['sport']] for e in sorted(todo, key=sort_key)))
@@ -177,6 +182,11 @@ def today_list(data):
                 d = (datetime.strptime(ts, '%y%m%d%H%M').replace(tzinfo=timezone.utc).astimezone(BERLIN).date() if len(ts) >= 10 else datetime.strptime(ts, '%y%m%d').date())
                 if d == day:
                     out.append(f"{f['key']} | {f['teams'][m[1]]} | {f['teams'][m[2]]} | {m[3] or '-'}")
+    late = sorted(open_for_claude(data, day - timedelta(days=1)), key=sort_key)
+    out.append('NACHZÜGLER GESTERN (ohne Ergebnis, z. B. Kämpfe in der US-Nacht):')
+    for e in late:
+        t = ev_dt(e)
+        out.append(f"{e['id']} | {t.strftime('%H:%M') if t else 'offen'} | {e['home']} – {e['away']} | {e['sport']} {e['comp']} | -")
     out.append(claude_line(data, day))
     return '\n'.join(out)
 
