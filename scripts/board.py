@@ -105,8 +105,8 @@ def push_text(data, day=None):
             return f"{t(e)} {e['home']}, {e['away']}"
         return f"{t(e)} {e['home']} – {e['away']} ({e['comp']})"
 
-    bayern = [e for e in evs if e.get('bayern')]
-    rest = [e for e in evs if not e.get('bayern')]
+    bayern = [e for e in evs if e.get('bayern')] + [e for e in evs if e.get('dfb') and not e.get('bayern')]
+    rest = [e for e in evs if e not in bayern]
     # Viele Pokalspiele ohne besondere Marke bündeln
     pk = [e for e in rest if e['comp'] == 'DFB-Pokal']
     lines = [line(e) for e in bayern]
@@ -146,6 +146,8 @@ def auto_result(data, e):
     """True, wenn die GitHub Action das Ergebnis dieses Termins selbst einträgt (scripts/results.py)."""
     if e['sport'] == 'f1':
         return e.get('away') in F1_AUTO
+    if e['id'].startswith('nt-'):
+        return bool(e.get('start'))  # Länderspiel: scripts/national.py trägt das Ergebnis aus ESPN ein
     if e['sport'] != 'fussball' or not (e.get('start') or e['comp'] == 'DFB-Pokal'):
         return False  # Ligaspiel ohne Anstoßzeit: kein Spielende bekannt, bleibt beim Claude-Lauf
     f = next((f for f in data.get('fixtures', []) if f['key'] == COMP_KEY.get(e['comp'])), None)

@@ -1,6 +1,7 @@
 name: Fußball und Ergebnisse aktualisieren
 
-# Spielpläne, Ergebnisse, Tabellen und Fußball-Termine aus den Feeds (scripts/football.py), danach Ergebnisse von
+# Spielpläne, Ergebnisse, Tabellen und Fußball-Termine aus den Feeds (scripts/football.py), Länderspiele des DFB-Teams und
+# Duelle der Top-Nationen aus ESPN (scripts/national.py), danach Ergebnisse von
 # Formel 1 (Jolpica), DFB-Pokal (OpenLigaDB) und Fußball-Terminen (scripts/results.py), ohne Claude.
 # Cron läuft in UTC. Berlin ist im Winter UTC+1, im Sommer UTC+2; feste Berliner Zeiten stehen deshalb doppelt drin.
 on:
@@ -43,6 +44,7 @@ jobs:
           for attempt in 1 2 3; do
             git fetch -q origin main && git reset -q --hard origin/main
             python3 scripts/football.py
+            python3 scripts/national.py
             git diff --quiet && fb=0 || fb=1
             python3 scripts/results.py | tee "${{ runner.temp }}/results.txt"
             if git diff --quiet; then echo "Keine Änderung"; break; fi
