@@ -24,18 +24,12 @@ jobs:
           ' "$1"
           }
           get() { echo "=== $1"; curl -sS --compressed -m 30 -A "Mozilla/5.0" "$1" -o o.json -w "%{http_code} %{size_download}\n"; show o.json; }
-          get "$B/uefa.nations/scoreboard?dates=20261113"
-          get "$B/uefa.nations/scoreboard?dates=20261001"
-          get "$B/uefa.nations/scoreboard?dates=2027"
-          get "$B/uefa.nations/scoreboard?dates=20261101-20261130"
-          get "$B/uefa.nations/scoreboard?limit=100&dates=20261112-20261117"
-          get "$B/all/teams/481/schedule?fixture=true"
-          get "$B/uefa.euroq/teams/481/schedule?fixture=true"
-          get "$B/fifa.friendly/teams/164/schedule?fixture=true"
-          get "$B/fifa.friendly/teams/164/schedule"
-          get "$B/uefa.nations/teams/164/schedule?fixture=true"
-          get "$B/fifa.world/teams/481/schedule"
-          echo "=== core"; curl -sS --compressed -m 30 "https://sports.core.api.espn.com/v2/sports/soccer/leagues/uefa.nations/events?dates=20261101-20270630&limit=200" | head -c 600; echo
-          echo "=== core2"; curl -sS --compressed -m 30 "https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.friendly/events?dates=20261101-20270630&limit=200" | head -c 600; echo
-          echo "=== cal"; curl -sS --compressed -m 30 "$B/fifa.friendly/scoreboard" | python3 -c "import json,sys; d=json.load(sys.stdin); L=d['leagues'][0]; print(L.get('calendarType'), L.get('calendarStartDate'), L.get('calendarEndDate'), str(L.get('calendar'))[:400])"
-          echo "=== pen"; curl -sS --compressed -m 30 "$B/fifa.world/scoreboard?dates=20260704" | head -c 300; echo
+          for t in 202 205 448 478 162 449 482 459 477 164 481; do echo "== team $t"; curl -sS --compressed -m 30 "$B/all/teams/$t/schedule?fixture=true" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('team',{}).get('displayName'), d.get('team',{}).get('abbreviation'), len(d.get('events',[]))); [print(' ', e['date'], e['name'], (e.get('league') or {}).get('slug'), (e.get('league') or {}).get('name')) for e in d.get('events',[])]"; done
+          get "$B/all/teams/481/schedule"
+          echo "=== summary"; curl -sS --compressed -m 30 "$B/fifa.world/summary?event=$(curl -sS --compressed "$B/fifa.world/teams/481/schedule" | python3 -c "import json,sys; print(json.load(sys.stdin)['events'][0]['id'])")" | python3 -c "
+          import json,sys; d=json.load(sys.stdin); c=d['header']['competitions'][0]
+          print(c['status']['type'], [(x['homeAway'], x['team']['displayName'], x.get('score'), x.get('shootoutScore')) for x in c['competitors']])"
+          echo "=== sb pen"; curl -sS --compressed -m 30 "$B/fifa.world/scoreboard?dates=20260629" | python3 -c "
+          import json,sys; d=json.load(sys.stdin)
+          for e in d['events']:
+              c=e['competitions'][0]; print(e['id'], e['date'], e['status']['type']['name'], e['status']['type'].get('completed'), [(x['team']['displayName'], x.get('score'), x.get('shootoutScore')) for x in c['competitors']])"
