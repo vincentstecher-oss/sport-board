@@ -24,14 +24,18 @@ jobs:
           ' "$1"
           }
           get() { echo "=== $1"; curl -sS --compressed -m 30 -A "Mozilla/5.0" "$1" -o o.json -w "%{http_code} %{size_download}\n"; show o.json; }
-          get "$B/uefa.nations/scoreboard"
-          get "$B/uefa.nations/scoreboard?dates=20261112-20261117"
-          get "$B/uefa.nations/scoreboard?dates=20261101-20270630&limit=300"
-          get "$B/uefa.nations/scoreboard?dates=20260924-20261006"
-          get "$B/fifa.friendly/scoreboard?dates=20261101-20270630&limit=300"
-          get "$B/uefa.euroq/scoreboard?dates=20270301-20271130&limit=300"
-          get "$B/fifa.friendly/scoreboard?dates=20260301-20260610&limit=300"
-          get "$B/uefa.nations/teams/481/schedule?fixture=true"
-          get "$B/uefa.nations/teams/481/schedule"
-          get "$B/fifa.friendly/teams/481/schedule?fixture=true"
-          get "$B/uefa.nations/teams/481"
+          get "$B/uefa.nations/scoreboard?dates=20261113"
+          get "$B/uefa.nations/scoreboard?dates=20261001"
+          get "$B/uefa.nations/scoreboard?dates=2027"
+          get "$B/uefa.nations/scoreboard?dates=20261101-20261130"
+          get "$B/uefa.nations/scoreboard?limit=100&dates=20261112-20261117"
+          get "$B/all/teams/481/schedule?fixture=true"
+          get "$B/uefa.euroq/teams/481/schedule?fixture=true"
+          get "$B/fifa.friendly/teams/164/schedule?fixture=true"
+          get "$B/fifa.friendly/teams/164/schedule"
+          get "$B/uefa.nations/teams/164/schedule?fixture=true"
+          get "$B/fifa.world/teams/481/schedule"
+          echo "=== core"; curl -sS --compressed -m 30 "https://sports.core.api.espn.com/v2/sports/soccer/leagues/uefa.nations/events?dates=20261101-20270630&limit=200" | head -c 600; echo
+          echo "=== core2"; curl -sS --compressed -m 30 "https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.friendly/events?dates=20261101-20270630&limit=200" | head -c 600; echo
+          echo "=== cal"; curl -sS --compressed -m 30 "$B/fifa.friendly/scoreboard" | python3 -c "import json,sys; d=json.load(sys.stdin); L=d['leagues'][0]; print(L.get('calendarType'), L.get('calendarStartDate'), L.get('calendarEndDate'), str(L.get('calendar'))[:400])"
+          echo "=== pen"; curl -sS --compressed -m 30 "$B/fifa.world/scoreboard?dates=20260704" | head -c 300; echo
