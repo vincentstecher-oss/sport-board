@@ -6,23 +6,32 @@ jobs:
   p:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          for L in uefa.nations fifa.friendly uefa.euroq fifa.worldq.uefa uefa.euro fifa.world; do
-            echo "=== $L"
-            curl -sS -m 30 "https://site.api.espn.com/apis/site/v2/sports/soccer/$L/scoreboard?dates=20261101-20271231&limit=500" -o "$L.json" -w "%{http_code} %{size_download}\n"
-            python3 - "$L.json" <<'PY'
+      - shell: bash
+        run: |
+          set +e
+          B=https://site.api.espn.com/apis/site/v2/sports/soccer
+          show() {
+            python3 -c '
           import json,sys
-          d=json.load(open(sys.argv[1]))
-          ev=d.get('events',[])
-          print(len(ev), [l.get('name') for l in d.get('leagues',[])])
-          for e in ev[:60]:
-              c=e['competitions'][0]
-              t=[(x['homeAway'],x['team'].get('displayName'),x['team'].get('abbreviation'),x['team'].get('id'),x.get('score')) for x in c['competitors']]
-              print(e['date'], e['status']['type']['name'], e.get('name'), t, (c.get('venue') or {}).get('fullName'), (e.get('season') or {}).get('slug'), [n.get('headline') for n in c.get('notes',[])][:1])
-          PY
-          done
-          echo "=== team 481"
-          curl -sS -m 30 "https://site.api.espn.com/apis/site/v2/sports/soccer/all/teams/481/schedule" | head -c 1500; echo
-          curl -sS -m 30 "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.nations/teams/481/schedule?fixture=true" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('team',{}).get('displayName'), len(d.get('events',[]))); [print(e['date'], e['name']) for e in d.get('events',[])]"
-          echo "=== past"
-          curl -sS -m 30 "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.nations/scoreboard?dates=20260924-20261006&limit=500" | python3 -c "import json,sys; d=json.load(sys.stdin); [print(e['date'], e['name'], e['status']['type']['name'], [(x['team']['displayName'],x.get('score')) for x in e['competitions'][0]['competitors']]) for e in d['events'][:8]]; print(len(d['events']))"
+          try: d=json.load(open(sys.argv[1]))
+          except Exception as x: print("NOJSON", open(sys.argv[1],"rb").read()[:300]); sys.exit()
+          ev=d.get("events",[])
+          print(len(ev), [l.get("name") for l in d.get("leagues",[])], d.get("team",{}).get("displayName"))
+          for e in ev[:40]:
+              c=e["competitions"][0]
+              t=[(x.get("homeAway"),x["team"].get("displayName"),x["team"].get("abbreviation"),x["team"].get("id"),x.get("score"),x.get("shootoutScore")) for x in c["competitors"]]
+              print(e["date"], e.get("status",{}).get("type",{}).get("name") or c.get("status",{}).get("type",{}).get("name"), t, (c.get("venue") or {}).get("fullName"), (c.get("venue") or {}).get("address"), (e.get("season") or {}).get("slug"), [n.get("headline") for n in c.get("notes",[])][:1], (e.get("league") or c.get("league") or {}).get("slug") if isinstance(e.get("league") or c.get("league"),dict) else "")
+          ' "$1"
+          }
+          get() { echo "=== $1"; curl -sS --compressed -m 30 -A "Mozilla/5.0" "$1" -o o.json -w "%{http_code} %{size_download}\n"; show o.json; }
+          get "$B/uefa.nations/scoreboard"
+          get "$B/uefa.nations/scoreboard?dates=20261112-20261117"
+          get "$B/uefa.nations/scoreboard?dates=20261101-20270630&limit=300"
+          get "$B/uefa.nations/scoreboard?dates=20260924-20261006"
+          get "$B/fifa.friendly/scoreboard?dates=20261101-20270630&limit=300"
+          get "$B/uefa.euroq/scoreboard?dates=20270301-20271130&limit=300"
+          get "$B/fifa.friendly/scoreboard?dates=20260301-20260610&limit=300"
+          get "$B/uefa.nations/teams/481/schedule?fixture=true"
+          get "$B/uefa.nations/teams/481/schedule"
+          get "$B/fifa.friendly/teams/481/schedule?fixture=true"
+          get "$B/uefa.nations/teams/481"
