@@ -146,6 +146,8 @@ def auto_result(data, e):
     """True, wenn die GitHub Action das Ergebnis dieses Termins selbst einträgt (scripts/results.py)."""
     if e['sport'] == 'f1':
         return e.get('away') in F1_AUTO
+    if e['id'].startswith('tn-'):
+        return bool(e.get('start'))  # Tennis: scripts/tennis.py trägt das Ergebnis aus ESPN ein
     if e['id'].startswith('nt-'):
         return bool(e.get('start'))  # Länderspiel: scripts/national.py trägt das Ergebnis aus ESPN ein
     if e['sport'] != 'fussball' or not (e.get('start') or e['comp'] == 'DFB-Pokal'):
